@@ -133,7 +133,7 @@ app.get('/api/network', (req, res) => res.json({ port: PORT, addresses: lanAddre
 app.get('/api/game/:pin', (req, res) => {
   const room = rooms.get(String(req.params.pin));
   if (!room || room.state === 'ended') return res.status(404).json({ error: 'Гру з таким кодом не знайдено' });
-  res.json({ ok: true, title: room.quiz.title, cover: room.quiz.cover, locked: room.locked, started: room.state !== 'lobby' });
+  res.json({ ok: true, title: room.quiz.title, cover: room.quiz.cover, locked: room.locked, started: room.state !== 'lobby', mode: room.mode });
 });
 
 // ───────────── Ігрові кімнати (лише в пам'яті!) ─────────────
@@ -176,8 +176,72 @@ function shuffledPerm(n) {
 const norm = s => String(s || '').toLowerCase().replace(/[’'`ʼ"«»().,!?]/g, '').replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
 
 function publicPlayer(p) {
-  return { id: p.id, nickname: p.nickname, avatar: p.avatar, score: p.score, streak: p.streak, connected: !!p.socketId };
+  return { id: p.id, nickname: p.nickname, avatar: p.avatar, score: p.score, streak: p.streak, connected: !!p.socketId, team: p.team ?? null };
 }
+
+// ───────────── Ігрові режими ─────────────
+const MODES = ['classic', 'race', 'bug', 'towers'];
+const TEAMS = [
+  { name: 'Сині Болти', color: '#2F6BFF', emoji: '🔩' },
+  { name: 'Жовті Шестерні', color: '#FFB020', emoji: '⚙️' },
+  { name: 'Зелені Чіпи', color: '#18B95C', emoji: '💾' },
+  { name: 'Червоні Лазери', color: '#FF4D5E', emoji: '🔴' },
+];
+const WAIT_TEXT = {
+  classic: 'Дивись на екран — таблиця лідерів!',
+  race: 'Дивись на екран — як там твоя ракета? 🚀',
+  bug: 'Дивись на екран — чи не наздогнав тебе Баг? 🐛',
+  towers: 'Дивись на екран — як росте вежа твоєї команди! 🧱',
+};
+const baseOf = q => (q.points === 'double' ? 2000 : q.points === 'none' ? 0 : 1000);
+const BUG_SPEED = 0.45; // Баг «набирає» 45% від максимуму балів за кожне питання
+function progressOf(room, score) { return Math.max(0, Math.min(1, score / ((room.baseTotal || 1) * 0.8))); }
+function bugScore(room) { return room.baseDone * BUG_SPEED; }
+function teamStats(room) {
+  const teams = TEAMS.slice(0, room.teamCount).map((t, i) => ({ ...t, id: i, members: 0, total: 0, avg: 0, bricks: 0, mvp: null }));
+  for (const p of room.players.values()) {
+    const t = teams[p.team]; if (!t) continue;
+    t.members += 1; t.total += p.score;
+    if (!t.mvp || p.score > t.mvp.score) t.mvp = { nickname: p.nickname, score: p.score, avatar: p.avatar };
+  }
+  teams.forEach(t => { t.avg = t.members ? Math.round(t.total / t.members) : 0; t.bricks = Math.floor(t.avg / 200); });
+  const ranked = [...teams].sort((a, b) => b.avg - a.avg);
+  ranked.forEach((t, i) => { t.rank = i + 1; });
+  return teams;
+}
+function sceneOf(room) {
+  const rank = ranking(room);
+  if (room.mode === 'race') {
+    return { players: rank.slice(0, 10).map(p => ({ ...publicPlayer(p), progress: progressOf(room, p.score) })), others: Math.max(0, rank.length - 10) };
+  }
+  if (room.mode === 'bug') {
+    const bs = bugScore(room);
+    return {
+      bug: progressOf(room, bs),
+      caught: rank.filter(p => p.caught).length,
+      players: rank.slice(0, 40).map(p => ({ ...publicPlayer(p), progress: progressOf(room, p.score), caught: !!p.caught, justEscaped: !!p.justEscaped, justCaught: !!p.justCaught })),
+    };
+  }
+  if (room.mode === 'towers') return { teams: teamStats(room) };
+  return { top: rank.slice(0, 5).map(publicPlayer) };
+}
+function modeInfoFor(room, p, teams) {
+  if (room.mode === 'race') return { progress: progressOf(room, p.score) };
+  if (room.mode === 'bug') return { caught: !!p.caught, justCaught: !!p.justCaught, justEscaped: !!p.justEscaped };
+  if (room.mode === 'towers' && teams) {
+    const t = teams[p.team];
+    return t ? { team: { id: t.id, name: t.name, color: t.color, emoji: t.emoji }, teamRank: t.rank, teams: teams.length, bricks: Math.round(p.last.gained / 200) } : {};
+  }
+  return {};
+}
+function pickTeam(room) {
+  const counts = TEAMS.slice(0, room.teamCount).map(() => 0);
+  for (const p of room.players.values()) if (counts[p.team] != null) counts[p.team] += 1;
+  const min = Math.min(...counts);
+  const options = counts.map((c, i) => (c === min ? i : -1)).filter(i => i >= 0);
+  return options[Math.floor(Math.random() * options.length)];
+}
+const teamPublic = (room, idx) => (room.mode === 'towers' && TEAMS[idx] ? { id: idx, ...TEAMS[idx] } : null);
 function ranking(room) {
   return [...room.players.values()].sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt);
 }
@@ -265,6 +329,17 @@ function revealQuestion(room) {
     p.score += gained;
     p.last = { ok, gained, answered: !!a };
   }
+  room.baseDone += base;
+  if (room.mode === 'bug') {
+    const bs = bugScore(room);
+    for (const p of room.players.values()) {
+      const was = !!p.caught;
+      p.caught = bs > 0 && p.score < bs;
+      p.justCaught = !was && p.caught;
+      p.justEscaped = was && !p.caught;
+    }
+  }
+  const teams = room.mode === 'towers' ? teamStats(room) : null;
   const rank = ranking(room);
   rank.forEach((p, i) => { p.rank = i + 1; });
   const view = correctAnswerView(q);
@@ -277,7 +352,7 @@ function revealQuestion(room) {
     io.to(p.socketId).emit('game:result', {
       ok: p.last.ok, answered: p.last.answered, gained: p.last.gained, score: p.score, streak: p.streak, rank: p.rank,
       players: room.players.size, behind: ahead ? { nickname: ahead.nickname, diff: ahead.score - p.score } : null,
-      answer: view, fact: q.fact, type: q.type,
+      answer: view, fact: q.fact, type: q.type, mode: room.mode, modeInfo: modeInfoFor(room, p, teams),
     });
   }
   if (room.auto) room.timer = setTimeout(() => showLeaderboard(room), 7000);
@@ -287,8 +362,8 @@ function showLeaderboard(room) {
   clearTimeout(room.timer);
   if (room.qIndex >= room.quiz.questions.length - 1) return finishGame(room);
   room.state = 'leaderboard';
-  io.to(room.hostRoom).emit('host:leaderboard', { top: ranking(room).slice(0, 5).map(publicPlayer), index: room.qIndex, total: room.quiz.questions.length });
-  io.to(room.playersRoom).emit('game:wait', { text: 'Дивись на екран — таблиця лідерів!' });
+  io.to(room.hostRoom).emit('host:leaderboard', { top: ranking(room).slice(0, 5).map(publicPlayer), index: room.qIndex, total: room.quiz.questions.length, mode: room.mode, scene: sceneOf(room) });
+  io.to(room.playersRoom).emit('game:wait', { text: WAIT_TEXT[room.mode] || WAIT_TEXT.classic });
   if (room.auto) room.timer = setTimeout(() => { room.qIndex += 1; startQuestion(room); }, 5000);
 }
 
@@ -297,9 +372,14 @@ function finishGame(room) {
   room.state = 'ended';
   const rank = ranking(room);
   const podium = rank.slice(0, 5).map(publicPlayer);
-  io.to(room.hostRoom).emit('host:end', { podium, players: room.players.size });
+  const scene = sceneOf(room);
+  io.to(room.hostRoom).emit('host:end', { podium, players: room.players.size, mode: room.mode, scene });
   rank.forEach((p, i) => {
-    if (p.socketId) io.to(p.socketId).emit('game:end', { rank: i + 1, score: p.score, players: rank.length, podium: podium.slice(0, 3) });
+    if (!p.socketId) return;
+    const extra = {};
+    if (room.mode === 'towers') { const t = scene.teams[p.team]; if (t) extra.team = { name: t.name, color: t.color, emoji: t.emoji, rank: t.rank, teams: scene.teams.length, avg: t.avg }; }
+    if (room.mode === 'bug') extra.caught = !!p.caught;
+    io.to(p.socketId).emit('game:end', { rank: i + 1, score: p.score, players: rank.length, podium: podium.slice(0, 3), mode: room.mode, ...extra });
   });
   destroyRoom(room, 1500);
 }
@@ -317,7 +397,7 @@ function destroyRoom(room, delay = 0) {
 
 io.on('connection', socket => {
   // ── Вчитель ──
-  socket.on('host:create', ({ token, quizId, auto } = {}, ack = () => {}) => {
+  socket.on('host:create', ({ token, quizId, auto, mode, teams } = {}, ack = () => {}) => {
     if (!isAdmin(token)) return ack({ error: 'Потрібен вхід адміністратора' });
     const quiz = store.get(quizId);
     if (!quiz) return ack({ error: 'Квіз не знайдено' });
@@ -327,11 +407,13 @@ io.on('connection', socket => {
     const room = {
       pin, quiz: { ...quiz, questions: playable }, players: new Map(), state: 'lobby', qIndex: 0, auto: !!auto,
       locked: false, hostSocket: socket.id, hostRoom: 'h:' + pin, playersRoom: 'p:' + pin, createdAt: Date.now(),
+      mode: MODES.includes(mode) ? mode : 'classic', teamCount: Math.max(2, Math.min(4, parseInt(teams, 10) || 2)),
+      baseDone: 0, baseTotal: playable.reduce((s, q) => s + baseOf(q), 0),
     };
     rooms.set(pin, room);
     socket.join(room.hostRoom);
     socket.data.hostPin = pin;
-    ack({ pin, title: quiz.title, cover: quiz.cover, total: playable.length });
+    ack({ pin, title: quiz.title, cover: quiz.cover, total: playable.length, mode: room.mode, teams: TEAMS.slice(0, room.teamCount) });
   });
 
   socket.on('host:resume', ({ token, pin } = {}, ack = () => {}) => {
@@ -339,7 +421,7 @@ io.on('connection', socket => {
     if (!room || !isAdmin(token)) return ack({ error: 'Гру не знайдено' });
     clearTimeout(room.hostGone);
     room.hostSocket = socket.id; socket.join(room.hostRoom); socket.data.hostPin = room.pin;
-    ack({ pin: room.pin, title: room.quiz.title, cover: room.quiz.cover, total: room.quiz.questions.length, state: room.state });
+    ack({ pin: room.pin, title: room.quiz.title, cover: room.quiz.cover, total: room.quiz.questions.length, state: room.state, mode: room.mode, teams: TEAMS.slice(0, room.teamCount) });
     emitLobby(room);
     // після обриву зв'язку повертаємо вчителю поточне питання
     if (room.state === 'question') {
@@ -391,10 +473,11 @@ io.on('connection', socket => {
     if (room.players.size >= 200) return ack({ error: 'У грі вже забагато гравців' });
     const id = crypto.randomBytes(8).toString('hex');
     const player = { id, nickname: nick, avatar: cleanAvatar(avatar), score: 0, streak: 0, joinedAt: Date.now(), socketId: socket.id };
+    if (room.mode === 'towers') player.team = pickTeam(room);
     room.players.set(id, player);
     socket.join(room.playersRoom);
     socket.data.pin = room.pin; socket.data.playerId = id;
-    ack({ ok: true, playerId: id, title: room.quiz.title, cover: room.quiz.cover, state: room.state });
+    ack({ ok: true, playerId: id, title: room.quiz.title, cover: room.quiz.cover, state: room.state, mode: room.mode, team: teamPublic(room, player.team) });
     emitLobby(room);
     if (room.state === 'question') socket.emit('game:question', { ...questionForClients(room), startsAt: room.qStartedAt });
     else if (room.state !== 'lobby') socket.emit('game:wait', { text: 'Ти в грі! Наступне питання вже скоро…' });
@@ -408,7 +491,7 @@ io.on('connection', socket => {
     p.socketId = socket.id;
     socket.join(room.playersRoom);
     socket.data.pin = room.pin; socket.data.playerId = p.id;
-    ack({ ok: true, nickname: p.nickname, avatar: p.avatar, score: p.score, title: room.quiz.title, cover: room.quiz.cover, state: room.state });
+    ack({ ok: true, nickname: p.nickname, avatar: p.avatar, score: p.score, title: room.quiz.title, cover: room.quiz.cover, state: room.state, mode: room.mode, team: teamPublic(room, p.team) });
     emitLobby(room);
     if (room.state === 'question' && !room.answers.has(p.id)) socket.emit('game:question', { ...questionForClients(room), startsAt: room.qStartedAt });
     else if (room.state !== 'lobby') socket.emit('game:wait', { text: 'З поверненням! Чекаємо наступне питання…' });

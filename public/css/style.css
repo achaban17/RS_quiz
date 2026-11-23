@@ -394,3 +394,149 @@ textarea.input { resize: vertical; min-height: 84px; font-size: 20px; font-famil
 .spinner { width: 22px; height: 22px; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; }
 
 body.admin .mute-btn { bottom: 84px; }
+
+/* ═════════════ ЛОГОТИП, ФОН, ІЛЮСТРАЦІЇ ═════════════ */
+.rs-logo { position: relative; display: inline-block; line-height: 0; }
+.rs-logo img { height: 100%; width: auto; display: block; }
+.logo-center .rs-logo { height: 58px; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .15)); }
+.topbar .rs-logo, .admin-head .rs-logo { height: 42px; }
+.host-bar .rs-logo { height: 38px; }
+.login-wrap .rs-logo { height: 60px; }
+.rs-logo .lid { position: absolute; top: 44%; height: 12.5%; width: 2.6%; background: #0A44DC; border-radius: 0 0 50% 50%; transform: scaleY(0); transform-origin: top; animation: blink 5s infinite; }
+.rs-logo .lid.l { left: 10.9%; } .rs-logo .lid.r { left: 25.2%; }
+.rs-logo:hover .lid { animation: blink .5s 2; }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(0); } 95.5% { transform: scaleY(1); } }
+
+.bg-fx { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; --hole: #1450E6; }
+body > section, .wrap, .host, .toasts { position: relative; z-index: 1; }
+.bg-fx .glow { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; animation: drift 26s ease-in-out infinite alternate; }
+.bg-fx .g1 { width: 46vw; height: 46vw; background: #3EC5FF; left: -12vw; top: -14vw; }
+.bg-fx .g2 { width: 40vw; height: 40vw; background: #9B6CFF; right: -12vw; bottom: -14vw; animation-duration: 32s; animation-direction: alternate-reverse; }
+.bg-fx .g3 { width: 30vw; height: 30vw; background: #2ED3A0; left: 40vw; top: 50vh; opacity: .25; animation-duration: 38s; }
+@keyframes drift { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(8vw, 6vh) scale(1.12); } 100% { transform: translate(-6vw, 10vh) scale(.92); } }
+.bg-fx .grid-fx { position: absolute; inset: -40px; background-image: radial-gradient(rgba(255, 255, 255, .12) 2px, transparent 2.5px); background-size: 28px 28px; transform: translate(var(--px, 0), var(--py, 0)); transition: transform .4s ease-out; animation: gridmove 40s linear infinite; }
+@keyframes gridmove { to { background-position: 28px 56px; } }
+.bg-fx .floater { position: absolute; bottom: 0; display: block; animation: floatUp linear infinite; will-change: transform; }
+.bg-fx .floater svg { width: 100%; height: auto; display: block; fill: #fff; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .12)); }
+@keyframes floatUp { from { transform: translate3d(0, 20vh, 0) rotate(0); } to { transform: translate3d(var(--dx), -115vh, 0) rotate(var(--rot)); } }
+body { background-image: none; }
+@media (prefers-reduced-motion: reduce) { .bg-fx .floater, .bg-fx .glow, .bg-fx .grid-fx, .rs-logo .lid { animation: none !important; } .bg-fx .floater { bottom: auto; top: calc(var(--i, 0) * 1%); } }
+
+.mascot { width: 100%; height: auto; overflow: visible; }
+.mascot .m-body-wrap { animation: mbob 2.4s ease-in-out infinite; transform-origin: 110px 230px; }
+.mascot .m-shadow { animation: mshadow 2.4s ease-in-out infinite; transform-origin: 110px 232px; }
+.mascot .m-wave { animation: wave 1.2s ease-in-out infinite; transform-origin: 178px 122px; }
+.mascot .m-arm-l2 { animation: cheerL .8s ease-in-out infinite alternate; transform-origin: 44px 122px; }
+.mascot .m-arm-r2 { animation: cheerR .8s ease-in-out infinite alternate; transform-origin: 176px 122px; }
+.mascot .m-eyes { animation: mblink 4.5s infinite; transform-origin: 120px 125px; }
+.mascot .m-bob { animation: mbob 1.6s ease-in-out infinite; }
+@keyframes mbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes mshadow { 0%, 100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.85); opacity: .7; } }
+@keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-22deg); } }
+@keyframes cheerL { to { transform: rotate(16deg); } }
+@keyframes cheerR { to { transform: rotate(-16deg); } }
+@keyframes mblink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+
+.join-layout { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+.join-mascot { width: 220px; flex: none; margin-right: -30px; position: relative; z-index: 2; }
+.join-mascot.sm { width: 120px; margin: 0 auto -18px; }
+.speech { position: relative; background: #fff; color: var(--ink); border-radius: 18px; padding: 10px 16px; font-weight: 800; box-shadow: 0 5px 0 rgba(4, 29, 102, .2); max-width: 240px; text-align: center; margin: 0 auto 8px; animation: zoomIn .5s .3s both; }
+.speech::after { content: ''; position: absolute; left: 50%; bottom: -10px; margin-left: -10px; border: 10px solid transparent; border-bottom: 0; border-top-color: #fff; }
+.peek-robots { position: fixed; bottom: -14px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 3vw; pointer-events: none; z-index: 0; }
+.peek-robots .pr { width: 92px; animation: peek 6s ease-in-out infinite; }
+.peek-robots .pr svg { width: 100%; }
+@keyframes peek { 0%, 100% { transform: translateY(40%); } 40%, 60% { transform: translateY(8%); } }
+@media (max-width: 760px) { .join-mascot:not(.sm) { display: none; } .peek-robots { display: none; } }
+
+/* ═════════════ ІГРОВІ РЕЖИМИ ═════════════ */
+.mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.mode-card { position: relative; border: 3px solid var(--line); border-radius: 22px; padding: 0; cursor: pointer; background: #fff; overflow: hidden; text-align: left; transition: transform .15s, border-color .15s, box-shadow .15s; }
+.mode-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(4, 29, 102, .15); }
+.mode-card.sel { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(10, 68, 220, .18); }
+.mode-card .art { height: 112px; display: flex; align-items: center; justify-content: center; gap: 6px; overflow: hidden; position: relative; }
+.mode-card .art svg { height: 86px; width: auto; }
+.mode-card .txt { padding: 12px 16px 16px; }
+.mode-card h3 { font-size: 19px; margin-bottom: 4px; }
+.mode-card p { margin: 0; color: var(--muted); font-size: 14px; }
+.mode-card .tag { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, .92); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; }
+.mode-card.sel::after { content: '✔'; position: absolute; top: 10px; left: 10px; background: var(--blue); color: #fff; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; }
+.art-classic { background: linear-gradient(135deg, #3EC5FF, #0A44DC); }
+.art-race { background: linear-gradient(135deg, #1E1B4B, #4338CA); }
+.art-bug { background: linear-gradient(135deg, #2ED3A0, #0E7490); }
+.art-towers { background: linear-gradient(135deg, #FFC93C, #FF8A3D); }
+.art-race .planet { width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFB38A, #E2552C); box-shadow: 0 0 0 6px rgba(255, 255, 255, .08); }
+.art .rocket-svg { height: 40px !important; animation: zoomRight 2.4s ease-in-out infinite; }
+@keyframes zoomRight { 0% { transform: translateX(-20px); } 50% { transform: translateX(14px); } 100% { transform: translateX(-20px); } }
+.team-pick { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+.team-pick button { border: 3px solid var(--line); background: #fff; border-radius: 14px; padding: 8px 16px; font-weight: 800; cursor: pointer; }
+.team-pick button.on { border-color: var(--blue); background: var(--blue); color: #fff; }
+@media (max-width: 700px) { .mode-grid { grid-template-columns: 1fr; } }
+
+.mode-banner { display: inline-flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, .22); color: #fff; padding: 8px 16px; border-radius: 999px; font-weight: 800; }
+.team-badge { display: inline-flex; align-items: center; gap: 8px; color: #fff; padding: 8px 18px; border-radius: 999px; font-family: var(--head); font-weight: 800; font-size: 18px; box-shadow: 0 4px 0 rgba(0, 0, 0, .2); }
+.team-cols { display: grid; gap: 14px; padding: 6px 26px 26px; flex: 1; }
+.team-col { background: rgba(255, 255, 255, .12); border-radius: 22px; padding: 12px; display: flex; flex-direction: column; gap: 10px; border-top: 8px solid; }
+.team-col h3 { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 20px; }
+.team-col .players-wall { padding: 0; justify-content: center; }
+.team-col .pl { font-size: 15px; padding: 4px 10px 4px 4px; }
+.team-col .pl svg { width: 40px; height: 40px; }
+
+/* Сцена: перегони ракет */
+.scene { flex: 1; display: flex; flex-direction: column; padding: 4px 26px 20px; gap: 10px; }
+.scene h1 { text-align: center; font-size: 40px; }
+.race-track { position: relative; flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; padding-right: 110px; }
+.race-track .finish { position: absolute; right: 0; top: 0; bottom: 0; width: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.race-track .finish .planet { width: 92px; height: 92px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFB38A, #E2552C 60%, #A33A1A); box-shadow: 0 0 40px rgba(255, 140, 80, .6); animation: spin 60s linear infinite; }
+.lane { position: relative; height: 52px; background: rgba(255, 255, 255, .08); border-radius: 999px; border: 2px dashed rgba(255, 255, 255, .2); }
+.lane .racer { position: absolute; top: 50%; left: 0; transform: translate(-10px, -50%); display: flex; align-items: center; gap: 4px; transition: left 1.6s cubic-bezier(.3, 1, .4, 1); white-space: nowrap; }
+.lane .racer .rocket-svg { width: 64px; height: 32px; }
+.lane .racer .rocket-svg .flame { animation: flame .15s infinite alternate; transform-origin: 14px 20px; }
+@keyframes flame { to { transform: scaleX(1.4); } }
+.lane .racer .av { width: 46px; height: 46px; }
+.lane .racer .av svg { width: 100%; height: 100%; }
+.lane .racer .nm { background: #fff; color: var(--ink); border-radius: 999px; padding: 2px 10px; font-weight: 800; font-size: 14px; }
+.lane .pos { position: absolute; left: -34px; top: 50%; transform: translateY(-50%); font-family: var(--head); font-weight: 800; }
+
+/* Сцена: втеча від Бага */
+.bug-track { position: relative; flex: 1; min-height: 340px; margin: 10px 0; }
+.bug-track .ground { position: absolute; left: 0; right: 0; bottom: 30px; height: 14px; border-radius: 8px; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .35) 0 30px, rgba(255, 255, 255, .15) 30px 60px); }
+.bug-track .safe { position: absolute; right: 0; bottom: 30px; top: 0; width: 70px; display: grid; place-items: center; font-size: 44px; }
+.bug-track .bug-zone { position: absolute; left: 0; bottom: 30px; top: 0; background: linear-gradient(90deg, rgba(124, 58, 237, .35), rgba(124, 58, 237, .08)); border-right: 3px dashed rgba(253, 224, 71, .7); transition: width 1.6s cubic-bezier(.3, 1, .4, 1); border-radius: 18px 0 0 18px; }
+.bug-track .bug-monster { position: absolute; bottom: 30px; width: 170px; transform: translateX(-75%); transition: left 1.6s cubic-bezier(.3, 1, .4, 1); filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .2)); }
+.bug-monster .bug-legs { animation: legs .25s infinite alternate; transform-origin: 80px 90px; }
+@keyframes legs { to { transform: scaleY(.85) translateY(3px); } }
+.bug-monster .bug-err { animation: blinkTxt 1s steps(2) infinite; }
+@keyframes blinkTxt { 50% { opacity: .2; } }
+.runner { position: absolute; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); transition: left 1.6s cubic-bezier(.3, 1, .4, 1), bottom 1.6s; }
+.runner .av { width: 56px; height: 56px; animation: run .35s infinite alternate; }
+.runner .av svg { width: 100%; height: 100%; }
+.runner .nm { background: #fff; color: var(--ink); border-radius: 999px; padding: 1px 8px; font-weight: 800; font-size: 12px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runner.caught .av { animation: shake .6s infinite; filter: grayscale(.6); }
+.runner.caught .av::after { content: ''; }
+.runner.caught .net { position: absolute; inset: -6px -6px 14px; border-radius: 50%; background: repeating-linear-gradient(45deg, rgba(253, 224, 71, .55) 0 3px, transparent 3px 10px), repeating-linear-gradient(-45deg, rgba(253, 224, 71, .55) 0 3px, transparent 3px 10px); }
+.runner .tag2 { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 6px; margin-top: 2px; }
+.runner .tag2.esc { background: var(--ok); color: #fff; }
+.runner .tag2.got { background: #7C3AED; color: #fff; }
+@keyframes run { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-6px) rotate(4deg); } }
+.bug-stats { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* Сцена: битва веж */
+.towers { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 4vw; padding: 10px 20px 0; min-height: 360px; }
+.tower { display: flex; flex-direction: column; align-items: center; width: 170px; }
+.tower .flag { font-size: 34px; animation: mbob 1.6s ease-in-out infinite; }
+.tower .stack { display: flex; flex-direction: column-reverse; align-items: center; gap: 0; min-height: 10px; }
+.tower .row { display: flex; gap: 2px; margin-top: -4px; }
+.tower .tbrick { width: 100%; height: auto; display: block; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .18)); }
+.tower .tbrick.new { animation: dropIn .6s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes dropIn { from { transform: translateY(-260px); opacity: 0; } to { transform: none; opacity: 1; } }
+.tower .base { width: 150px; height: 18px; border-radius: 6px; background: rgba(0, 0, 0, .25); }
+.tower .tname { margin-top: 10px; color: #fff; font-family: var(--head); font-weight: 800; font-size: 20px; text-align: center; }
+.tower .tscore { background: #fff; color: var(--ink); border-radius: 999px; padding: 4px 14px; font-weight: 800; margin-top: 6px; }
+.tower .crown { font-size: 44px; animation: zoomIn .6s 1.2s both; }
+.tower .mvp { font-size: 13px; color: #fff; opacity: .9; margin-top: 4px; }
+
+/* Статус гравця в режимах */
+.mode-status { border-radius: 16px; padding: 10px 14px; margin-top: 8px; font-weight: 800; display: flex; align-items: center; gap: 10px; justify-content: center; }
+.mode-status .mini-rocket { flex: 1; height: 12px; background: #E8EEFF; border-radius: 999px; overflow: hidden; position: relative; }
+.mode-status .mini-rocket i { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, #FFB020, #FF5A5F); border-radius: 999px; transition: width 1.2s; }
+@media (min-width: 761px) { .join-mascot.sm { display: none; } }

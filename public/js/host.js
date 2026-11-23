@@ -17,12 +17,12 @@
     st = null;
   }
 
-  async function start(quizId, token, exitCb) {
+  async function start(quizId, token, exitCb, opts = {}) {
     stop();
     onExit = exitCb || (() => {});
     root = $('#v-host');
     root.innerHTML = `<div class="center"><div class="spinner"></div></div>`;
-    st = { quizId, token, players: [], auto: false, locked: false, joinUrl: '' };
+    st = { quizId, token, players: [], auto: false, locked: false, joinUrl: '', mode: opts.mode || 'classic', teamCount: opts.teams || 2, teams: [], prev: {} };
     st.joinBase = await joinBase();
     socket = io({ transports: ['websocket', 'polling'] });
     bind();
@@ -38,7 +38,7 @@
       }
       if (saved && saved.quizId === quizId) {
         socket.emit('host:resume', { token, pin: saved.pin }, r => {
-          if (r && !r.error) { Object.assign(st, { pin: r.pin, title: r.title, cover: r.cover, total: r.total }); if (r.state === 'lobby') lobby(); else waitingNext(); }
+          if (r && !r.error) { Object.assign(st, { pin: r.pin, title: r.title, cover: r.cover, total: r.total, mode: r.mode || st.mode, teams: r.teams || [] }); if (r.state === 'lobby') lobby(); else waitingNext(); }
           else create();
         });
       } else create();
@@ -46,9 +46,9 @@
   }
 
   function create() {
-    socket.emit('host:create', { token: st.token, quizId: st.quizId, auto: st.auto }, r => {
+    socket.emit('host:create', { token: st.token, quizId: st.quizId, auto: st.auto, mode: st.mode, teams: st.teamCount }, r => {
       if (!r || r.error) { toast(r ? r.error : 'Помилка', 'bad'); onExit(); return; }
-      Object.assign(st, { pin: r.pin, title: r.title, cover: r.cover, total: r.total, players: [] });
+      Object.assign(st, { pin: r.pin, title: r.title, cover: r.cover, total: r.total, players: [], mode: r.mode, teams: r.teams || [], prev: {} });
       try { sessionStorage.setItem(HKEY, JSON.stringify({ pin: r.pin, quizId: st.quizId })); } catch (_) {}
       lobby();
     });
@@ -66,8 +66,9 @@
   }
 
   function bar(extra = '') {
-    return `<div class="host-bar"><a class="logo" href="#/"><img src="/img/logo-white.png" alt="Robot School"></a>
-      <div class="head" style="font-size:18px;opacity:.9">${esc(st.cover || '')} ${esc(st.title || '')}</div><div class="spacer"></div>${extra}</div>`;
+    const m = Art.MODES[st.mode] || Art.MODES.classic;
+    return `<div class="host-bar"><a class="logo" href="#/">${Art.logoHTML()}</a>
+      <div class="head" style="font-size:18px;opacity:.9">${esc(st.cover || '')} ${esc(st.title || '')}</div><span class="mode-banner" style="font-size:14px;padding:6px 12px">${m.emoji} ${esc(m.name)}</span><div class="spacer"></div>${extra}</div>`;
   }
 
   // ── Лобі ──
@@ -86,6 +87,7 @@
       </div>
       <div class="lobby-info">
         <div class="count-pill">👥 <span id="h-count">0</span> гравців</div>
+        <div class="white" style="font-weight:800;max-width:520px;text-align:center">${(Art.MODES[st.mode] || Art.MODES.classic).emoji} ${esc((Art.MODES[st.mode] || Art.MODES.classic).desc)}</div>
         <button class="btn btn-lg" id="h-start" disabled>▶ Почати гру</button>
       </div>
       <div class="players-wall" id="h-wall"></div>`;
@@ -94,7 +96,7 @@
     $('#h-start').onclick = () => { SFX.lobbyStop(); socket.emit('host:start'); };
     $('#h-cancel').onclick = () => { if (confirm('Скасувати гру? Учні повернуться на головну.')) { socket.emit('host:end'); clearSaved(); onExit(); } };
     $('#h-wall').onclick = e => {
-      const p = e.target.closest('.pl'); if (!p) return;
+      const p = e.target.closest('.pl'); if (!p || !p.dataset.id) return;
       if (confirm(`Прибрати гравця «${p.dataset.name}» з гри?`)) socket.emit('host:kick', p.dataset.id);
     };
     drawPlayers();
@@ -106,12 +108,24 @@
     $('#h-count').textContent = st.players.length;
     $('#h-start').disabled = !st.players.length;
     if (!st.players.length) {
-      wall.innerHTML = `<div class="waiting-robots"><div class="big-emoji">🤖📡</div>Чекаємо на гравців<span class="dots"></span></div>`;
+      wall.className = 'players-wall'; wall.style.gridTemplateColumns = '';
+      wall.innerHTML = `<div class="waiting-robots"><div style="width:170px;margin:0 auto">${Art.mascot({ pose: 'wave' })}</div>Чекаємо на гравців<span class="dots"></span></div>`;
       return;
     }
     const existing = new Set($$('.pl', wall).map(x => x.dataset.id));
     // перемальовуємо, але анімуємо лише нових
-    wall.innerHTML = st.players.map(p => `<div class="pl ${p.connected ? '' : 'off'}" data-id="${esc(p.id)}" data-name="${esc(p.nickname)}" style="${existing.has(p.id) ? 'animation:none' : ''}">${Robot.svg(p.avatar)}<span>${esc(p.nickname)}</span></div>`).join('');
+    const card = p => `<div class="pl ${p.connected ? '' : 'off'}" data-id="${esc(p.id)}" data-name="${esc(p.nickname)}" style="${existing.has(p.id) ? 'animation:none' : ''}">${Robot.svg(p.avatar)}<span>${esc(p.nickname)}</span></div>`;
+    if (st.mode === 'towers' && st.teams.length) {
+      wall.className = 'team-cols'; wall.style.gridTemplateColumns = `repeat(${st.teams.length}, 1fr)`;
+      wall.innerHTML = st.teams.map((t, i) => {
+        const ps = st.players.filter(p => p.team === i);
+        return `<div class="team-col" style="border-color:${t.color}"><h3><span>${t.emoji}</span>${esc(t.name)} <span class="count-pill" style="font-size:14px;padding:4px 10px">${ps.length}</span></h3>
+          <div style="display:flex;justify-content:center"><span style="width:64px;display:block">${Art.brick(t.color)}</span></div><div class="players-wall">${ps.map(card).join('')}</div></div>`;
+      }).join('');
+      return;
+    }
+    wall.className = 'players-wall'; wall.style.gridTemplateColumns = '';
+    wall.innerHTML = st.players.map(card).join('');
   }
 
   // ── Події сервера ──
@@ -243,6 +257,7 @@
   // ── Таблиця лідерів ──
   function leaderboard(d) {
     st.phase = 'leaderboard';
+    if (d.mode && d.mode !== 'classic' && d.scene) return modeScene(d, false);
     root.innerHTML = bar(`<div class="count-pill" style="font-size:16px">Після ${d.index + 1} з ${d.total}</div><button class="btn" id="h-next">Наступне питання ➜</button>`) + `
       <div class="center" style="justify-content:flex-start;padding-top:10px">
         <h1 style="font-size:44px">🏆 Таблиця лідерів</h1>
@@ -258,17 +273,105 @@
     st.phase = 'end';
     cancelAnimationFrame(raf);
     clearSaved();
+    if (d.mode === 'towers' && d.scene) return modeScene(d, true);
     const [p1, p2, p3] = d.podium;
     const pod = (p, n) => p ? `<div class="pod p${n}"><div class="who">${Robot.svg(p.avatar)}<div class="nm">${esc(p.nickname)}</div><div class="sc">${p.score} балів</div></div><div class="step">${n}</div></div>` : `<div class="pod p${n}"><div class="step" style="opacity:.3">${n}</div></div>`;
+    const extraLine = d.mode === 'bug' && d.scene ? ` · 🏃 Втекли від Бага: ${d.players - d.scene.caught} з ${d.players}` : d.mode === 'race' ? ' · 🚀 Перші на Марсі:' : '';
     root.innerHTML = bar(`<button class="btn btn-white" id="h-again">🔁 Зіграти ще раз</button><button class="btn" id="h-home">🏠 До квізів</button>`) + `
       <div class="center" style="justify-content:flex-start;padding-top:0"><h1 style="font-size:46px" class="anim-zoom">🎉 Вітаємо переможців!</h1>
-        <div class="white" style="font-weight:800">Грало: ${d.players}. Дані гравців видалено із сервера.</div></div>
+        <div class="white" style="font-weight:800">Грало: ${d.players}${extraLine}. Дані гравців видалено із сервера.</div></div>
       <div class="podium">${pod(p2, 2)}${pod(p1, 1)}${pod(p3, 3)}</div>
       ${d.podium.length > 3 ? `<div class="row" style="justify-content:center;gap:12px;padding:14px">${d.podium.slice(3).map((p, i) => `<span class="count-pill" style="font-size:16px">${i + 4}. ${esc(p.nickname)} — ${p.score}</span>`).join('')}</div>` : ''}`;
     SFX.fanfare();
     setTimeout(() => confetti(6000), 1500);
     $('#h-home').onclick = () => onExit();
     $('#h-again').onclick = () => { st.pin = null; st.players = []; create(); };
+  }
+
+  // ── Сцени ігрових режимів ──
+  function modeScene(d, final) {
+    const sc = d.scene;
+    const nextBtn = final
+      ? `<button class="btn btn-white" id="h-again">🔁 Зіграти ще раз</button><button class="btn" id="h-home">🏠 До квізів</button>`
+      : `<div class="count-pill" style="font-size:16px">Після ${d.index + 1} з ${d.total}</div><button class="btn" id="h-next">Наступне питання ➜</button>`;
+    let body = '';
+    if (d.mode === 'race') body = raceScene(sc);
+    else if (d.mode === 'bug') body = bugScene(sc);
+    else if (d.mode === 'towers') body = towersScene(sc, final);
+    root.innerHTML = bar(nextBtn) + `<div class="scene">${body}</div>`;
+    // анімація: спершу старі позиції, потім нові
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      $$('[data-to]').forEach(el => { el.style.left = el.dataset.to; });
+      $$('[data-wto]').forEach(el => { el.style.width = el.dataset.wto; });
+    }));
+    if (d.mode === 'race' || d.mode === 'bug') sc.players.forEach(p => { st.prev[p.id] = p.progress; });
+    if (d.mode === 'bug') st.prev.__bug = sc.bug;
+    if (d.mode === 'towers') sc.teams.forEach(t => { st.prev['t' + t.id] = t.bricks; });
+    if (final) {
+      SFX.fanfare(); setTimeout(() => confetti(6000), 1200);
+      $('#h-home').onclick = () => onExit();
+      $('#h-again').onclick = () => { st.pin = null; st.players = []; st.prev = {}; create(); };
+    } else {
+      SFX.join();
+      $('#h-next').onclick = () => socket.emit('host:next');
+    }
+  }
+
+  function raceScene(sc) {
+    const pos = p => `calc((100% - 230px) * ${p.toFixed(3)})`;
+    return `<h1>🚀 Космічні перегони до Марса</h1>
+      <div class="race-track"><div class="finish"><div class="planet"></div><b>МАРС</b></div>
+      ${sc.players.map((p, i) => `<div class="lane" style="margin-left:34px"><span class="pos">${i + 1}</span>
+        <div class="racer" style="left:${pos(st.prev[p.id] || 0)}" data-to="${pos(p.progress)}">${Art.rocket(['#FF5A5F', '#FFB020', '#2ED3A0', '#9B6CFF', '#3EC5FF'][i % 5])}<span class="av">${Robot.svg(p.avatar)}</span><span class="nm">${esc(p.nickname)} · ${p.score}</span></div></div>`).join('')}
+      ${sc.others ? `<div class="white" style="text-align:center;font-weight:800">…і ще ${sc.others} ракет у дорозі 🛰️</div>` : ''}</div>`;
+  }
+
+  function bugScene(sc) {
+    const x = p => `calc(6% + ${(p * 86).toFixed(2)}%)`;
+    const buckets = {};
+    const runners = sc.players.map(p => {
+      const b = Math.round(p.progress * 40);
+      const k = buckets[b] = (buckets[b] || 0) + 1;
+      const row = (k - 1) % 4, shift = Math.floor((k - 1) / 4);
+      const to = `calc(6% + ${(p.progress * 86).toFixed(2)}% + ${shift * 34}px)`;
+      const from = `calc(6% + ${((st.prev[p.id] || 0) * 86).toFixed(2)}% + ${shift * 34}px)`;
+      return `<div class="runner ${p.caught ? 'caught' : ''}" style="left:${from};bottom:${44 + row * 82}px" data-to="${to}">
+        ${p.caught ? '<span class="net"></span>' : ''}<span class="av">${Robot.svg(p.avatar, { noBg: true })}</span><span class="nm">${esc(p.nickname)}</span>
+        ${p.justEscaped ? '<span class="tag2 esc">Втік! 🎉</span>' : p.justCaught ? '<span class="tag2 got">Спійманий!</span>' : ''}</div>`;
+    }).join('');
+    const safe = sc.players.length - sc.caught;
+    return `<h1>🐛 Втеча від Бага</h1>
+      <div class="bug-stats"><span class="count-pill">🏃 Тікають: ${safe}</span><span class="count-pill" style="background:rgba(124,58,237,.5)">🕸️ У Бага: ${sc.caught}</span></div>
+      <div class="bug-track"><div class="ground"></div><div class="safe">🏁</div>
+        <div class="bug-zone" style="width:${x(st.prev.__bug || 0)}" data-wto="${x(sc.bug)}"></div>
+        <div class="bug-monster-wrap">${Art.bugMonster().replace('class="bug-monster"', `class="bug-monster" style="left:${x(st.prev.__bug || 0)}" data-to="${x(sc.bug)}"`)}</div>
+        ${runners}</div>
+      ${sc.caught ? '<div class="white" style="text-align:center;font-weight:800">Спіймані роботи можуть вирватися — для цього треба відповісти правильно! 💪</div>' : ''}`;
+  }
+
+  function towersScene(sc, final) {
+    const max = Math.max(1, ...sc.teams.map(t => Math.ceil(t.bricks / 2)));
+    const rowH = Math.max(10, Math.min(56, 400 / max));
+    const bw = Math.round(rowH * 60 / 32);
+    const leader = [...sc.teams].sort((a, b) => b.avg - a.avg)[0];
+    const towers = sc.teams.map(t => {
+      const prev = st.prev['t' + t.id] || 0;
+      let bricks = '';
+      for (let r = 0; r < Math.ceil(t.bricks / 2); r++) {
+        const inRow = Math.min(2, t.bricks - r * 2);
+        bricks += `<div class="row">${Array.from({ length: inRow }, (_, j) => {
+          const idx = r * 2 + j; const isNew = idx >= prev;
+          return `<span style="width:${bw}px;display:block;${isNew ? `animation-delay:${(idx - prev) * 0.08}s` : ''}" class="${isNew ? 'nb' : ''}">${Art.brick(t.color).replace('class="tbrick ', `class="tbrick ${isNew ? 'new' : ''} `)}</span>`;
+        }).join('')}</div>`;
+      }
+      const win = final && t.id === leader.id;
+      return `<div class="tower">${win ? '<div class="crown">👑</div>' : ''}<div class="flag">${t.emoji}</div><div class="stack">${bricks}</div><div class="base" style="width:${bw * 2 + 30}px"></div>
+        <div class="tname">${esc(t.name)}</div><div class="tscore">⭐ ${t.avg} · 🧱 ${t.bricks}</div>
+        <div class="mvp">👥 ${t.members}${t.mvp ? ` · MVP: ${esc(t.mvp.nickname)}` : ''}</div></div>`;
+    }).join('');
+    return `<h1>${final ? `🏆 Перемогла команда «${esc(leader.name)}»!` : '🧱 Битва веж'}</h1>
+      <div class="white" style="text-align:center;font-weight:800">Висота вежі = середній бал команди, тож неважливо, скільки в ній учнів</div>
+      <div class="towers">${towers}</div>`;
   }
 
   global.Host = { start, stop };

@@ -12,9 +12,9 @@
 <!-- Вхід -->
 <section id="v-login" class="hidden">
   <div class="login-wrap">
-    <img src="/img/logo-white.png" alt="Robot School" style="height:56px">
+    <span class="rs-logo"><span class="rs-logo"><img src="/img/logo-white.png" alt="Robot School"><i class="lid l"></i><i class="lid r"></i></span><i class="lid l"></i><i class="lid r"></i></span>
     <form class="card anim-zoom" id="f-login" autocomplete="on">
-      <div style="text-align:center" class="big-emoji">👩‍🏫</div>
+      <div style="width:150px;margin:-10px auto 0" id="login-mascot"></div>
       <h2 style="text-align:center;margin:8px 0 18px">Вхід для вчителя</h2>
       <label class="lbl" for="lg-login">Логін</label>
       <input class="input" id="lg-login" autocomplete="username" required>
@@ -31,7 +31,7 @@
 <section id="v-dash" class="hidden">
   <div class="wrap">
     <div class="admin-head">
-      <a class="logo" href="/admin"><img src="/img/logo-white.png" alt="Robot School"></a>
+      <a class="logo" href="/admin"><span class="rs-logo"><img src="/img/logo-white.png" alt="Robot School"><i class="lid l"></i><i class="lid r"></i></span></a>
       <div class="spacer"></div>
       <button class="btn" id="btn-gen">✨ Згенерувати з ШІ</button>
       <button class="btn btn-white" id="btn-new">➕ Створити вручну</button>
@@ -53,7 +53,7 @@
 <section id="v-editor" class="hidden">
   <div class="wrap">
     <div class="admin-head">
-      <a class="logo" href="/admin"><img src="/img/logo-white.png" alt="Robot School"></a>
+      <a class="logo" href="/admin"><span class="rs-logo"><img src="/img/logo-white.png" alt="Robot School"><i class="lid l"></i><i class="lid r"></i></span></a>
       <div class="spacer"></div>
       <button class="btn btn-sm btn-ghost" id="ed-back">← До квізів</button>
     </div>
@@ -100,6 +100,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/fx.js"></script>
 <script src="/js/avatar.js"></script>
+<script src="/js/art.js"></script>
 <script src="/js/admin.js"></script>
 <script src="/js/host.js"></script>
 </body>

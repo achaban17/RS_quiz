@@ -45,9 +45,9 @@
     const h = location.hash.replace(/^#\/?/, '');
     if (!token) { view('v-login'); setTimeout(() => $('#lg-login').focus(), 50); return; }
     try { const me = await api('/api/me'); aiOn = me.ai; aiName = me.aiName || ''; } catch (_) { return; }
-    const [page, id] = h.split('/');
+    const [page, id, mode, teams] = h.split('/');
     if (page === 'edit' && id) return openEditor(id);
-    if (page === 'host' && id) { view('v-host'); return Host.start(id, token, () => { location.hash = '#/'; }); }
+    if (page === 'host' && id) { view('v-host'); return Host.start(id, token, () => { location.hash = '#/'; }, { mode: mode || 'classic', teams: +teams || 2 }); }
     Host.stop();
     loadDash();
   }
@@ -97,7 +97,7 @@
     $('#dash-count').textContent = quizzes.length;
     $$('#dash-filter .chip').forEach(c => c.classList.toggle('on', c.dataset.f === filter));
     if (!list.length) {
-      $('#quiz-grid').innerHTML = `<div class="empty"><div class="big-emoji">🤖</div><h2 style="margin:10px 0">Тут поки порожньо</h2>
+      $('#quiz-grid').innerHTML = `<div class="empty"><div style="width:140px;margin:0 auto">${Art.mascot({ pose: 'wave', prop: 'magnifier' })}</div><h2 style="margin:10px 0">Тут поки порожньо</h2>
         <p>Натисніть «✨ Згенерувати з ШІ» — і помічник складе цікавий квіз за хвилину!</p>
         <button class="btn btn-lg" onclick="document.getElementById('btn-gen').click()">✨ Згенерувати перший квіз</button></div>`;
       return;
@@ -124,7 +124,7 @@
     const b = e.target.closest('[data-act]'); if (!b) return;
     const id = b.closest('.quiz-card').dataset.id;
     const q = quizzes.find(x => x.id === id);
-    if (b.dataset.act === 'play') location.hash = '#/host/' + id;
+    if (b.dataset.act === 'play') openModePicker(id, q.title);
     if (b.dataset.act === 'edit') location.hash = '#/edit/' + id;
     if (b.dataset.act === 'dup') { await api(`/api/quizzes/${id}/duplicate`, { method: 'POST' }); toast('Копію створено', 'ok'); loadDash(); }
     if (b.dataset.act === 'del' && confirm(`Видалити квіз «${q.title}»? Цю дію не можна скасувати.`)) { await api('/api/quizzes/' + id, { method: 'DELETE' }); toast('Квіз видалено'); loadDash(); }
@@ -197,7 +197,7 @@
       const params = { direction: f.dir.value, count: +f.count.value, time: +f.time.value, topics: f.topics.value, age: f.age.value, difficulty: f.difficulty.value, types, extra: f.extra.value };
       const modal = $('.modal', m);
       const backup = modal.innerHTML;
-      modal.innerHTML = `<div class="thinking"><div class="robot-think">${Robot.svg({ body: 1, color: 0, eyes: 2, mouth: 0, antenna: 3, hat: 4, glasses: 0, neck: 0, hand: 3, bg: 8 })}</div>
+      modal.innerHTML = `<div class="thinking"><div class="robot-think" style="background:var(--blue);border-radius:50%;padding:14px">${Art.mascot({ pose: 'idle', prop: 'laptop' })}</div>
         <h2>ШІ-помічник складає квіз…</h2><div class="sub" id="think-line">Підбираю найцікавіші питання</div><div class="bar"><i></i></div></div>`;
       const lines = ['Підбираю найцікавіші питання', 'Вигадую хитрі варіанти відповідей', 'Додаю цікаві факти', 'Перевіряю правильні відповіді', 'Розставляю бонусні раунди ⚡'];
       let li = 0;
@@ -424,11 +424,54 @@
   }
   $('#ed-save').addEventListener('click', () => save().catch(e => toast(e.message, 'bad')));
   $('#ed-play').addEventListener('click', async () => {
-    try { const s = await save(); if (s) location.hash = '#/host/' + s.id; } catch (e) { toast(e.message, 'bad'); }
+    try { const s = await save(); if (s) openModePicker(s.id, s.title); } catch (e) { toast(e.message, 'bad'); }
   });
   $('#ed-back').addEventListener('click', () => { location.hash = '#/'; });
 
+  // ── Вибір ігрового режиму ──
+  function modeArt(k) {
+    if (k === 'classic') return `<div style="width:92px">${Art.mascot({ pose: 'cheer', prop: 'trophy' })}</div>`;
+    if (k === 'race') return `${Art.rocket('#FF5A5F')}<span style="font-size:22px">✨</span><div class="planet"></div>`;
+    if (k === 'bug') return `<div style="width:54px">${Robot.svg({ body: 1, color: 4, eyes: 1, mouth: 3, antenna: 1 }, { noBg: true })}</div><div style="width:120px">${Art.bugMonster()}</div>`;
+    return `<div style="display:flex;align-items:flex-end;gap:10px">${['#2F6BFF', '#FFB020', '#18B95C'].map((c, i) => `<div style="display:flex;flex-direction:column-reverse">${Array.from({ length: 2 + i }, () => `<div style="width:42px;margin-top:-3px">${Art.brick(c)}</div>`).join('')}</div>`).join('')}</div><span style="font-size:34px;align-self:flex-start;margin-top:8px">🚩</span>`;
+  }
+  function openModePicker(id, title) {
+    let mode = sessionStorage.getItem('rs-last-mode') || 'classic';
+    let teams = +sessionStorage.getItem('rs-last-teams') || 2;
+    const m = document.createElement('div');
+    m.className = 'modal-bg';
+    m.innerHTML = `<div class="modal" role="dialog" aria-modal="true" style="max-width:900px">
+      <div class="row"><h2 class="grow">🎮 Обери режим гри</h2><button class="icon-btn" data-close>✕</button></div>
+      <p class="sub">«${esc(title || '')}» — питання ті самі, змінюється спосіб гри.</p>
+      <div class="mode-grid">${Object.entries(Art.MODES).map(([k, v]) => `
+        <button type="button" class="mode-card ${k === mode ? 'sel' : ''}" data-mode="${k}">
+          <div class="art art-${k}">${modeArt(k)}${k === 'towers' ? '<span class="tag">👥 Команди</span>' : '<span class="tag">👤 Кожен сам</span>'}</div>
+          <div class="txt"><h3>${v.emoji} ${esc(v.name)}</h3><p>${esc(v.desc)}</p></div>
+        </button>`).join('')}</div>
+      <div class="team-pick ${mode === 'towers' ? '' : 'hidden'}"><b>Кількість команд:</b>${[2, 3, 4].map(n => `<button type="button" data-teams="${n}" class="${n === teams ? 'on' : ''}">${n}</button>`).join('')}<span class="hint">Учні розподіляться автоматично й порівну</span></div>
+      <div class="row" style="justify-content:flex-end;margin-top:18px"><button class="btn btn-ghost" data-close>Скасувати</button><button class="btn btn-green btn-lg" id="mp-go">▶ Почати</button></div>
+    </div>`;
+    document.body.appendChild(m);
+    const close = () => m.remove();
+    $$('[data-close]', m).forEach(b => b.onclick = close);
+    m.addEventListener('mousedown', e => { if (e.target === m) close(); });
+    m.addEventListener('click', e => {
+      const c = e.target.closest('.mode-card');
+      if (c) { mode = c.dataset.mode; $$('.mode-card', m).forEach(x => x.classList.toggle('sel', x === c)); $('.team-pick', m).classList.toggle('hidden', mode !== 'towers'); SFX.pop(); }
+      const t = e.target.closest('[data-teams]');
+      if (t) { teams = +t.dataset.teams; $$('[data-teams]', m).forEach(x => x.classList.toggle('on', x === t)); SFX.click(); }
+    });
+    m.addEventListener('dblclick', e => { if (e.target.closest('.mode-card')) $('#mp-go', m).click(); });
+    $('#mp-go', m).onclick = () => {
+      try { sessionStorage.setItem('rs-last-mode', mode); sessionStorage.setItem('rs-last-teams', teams); } catch (_) {}
+      close();
+      location.hash = `#/host/${id}/${mode}/${teams}`;
+    };
+  }
+
   FX.muteButton();
+  Art.background();
+  $('#login-mascot').innerHTML = Art.mascot({ pose: 'wave', prop: 'laptop', light: true });
   document.addEventListener('pointerdown', () => SFX.unlock(), { once: true });
   route();
 })();

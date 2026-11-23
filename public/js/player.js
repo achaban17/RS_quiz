@@ -3,7 +3,7 @@
   const { $, $$, esc, ANSWER_STYLE, TYPE_LABEL, toast, confetti } = FX;
   const socket = io({ transports: ['websocket', 'polling'] });
 
-  const me = { pin: null, playerId: null, nickname: '', avatar: Robot.random(), joined: false, score: 0 };
+  const me = { pin: null, playerId: null, nickname: '', avatar: Robot.random(), joined: false, score: 0, mode: 'classic', team: null };
   let editor = null;
   let clockOffset = 0;
   let timerRaf = null;
@@ -16,6 +16,10 @@
     window.scrollTo(0, 0);
   }
   FX.muteButton();
+  Art.background();
+  $('#pin-mascot').insertAdjacentHTML('beforeend', Art.mascot({ pose: 'wave' }));
+  $('#pin-mascot-sm').innerHTML = Art.mascot({ pose: 'wave', light: true });
+  $('#peek').innerHTML = [0, 1, 2, 3].map(i => `<div class="pr" style="animation-delay:${i * 1.4}s">${Robot.svg(Robot.random(), { noBg: true })}</div>`).join('');
   document.addEventListener('pointerdown', () => SFX.unlock(), { once: true });
 
   // Тимчасові дані для повернення після обриву зв'язку (лише в цій вкладці, видаляються після гри)
@@ -94,7 +98,7 @@
         if (res && /не знайдено|закрив/i.test(res.error)) setTimeout(resetAll, 1800);
         return;
       }
-      me.joined = true; me.playerId = res.playerId; me.score = 0;
+      me.joined = true; me.playerId = res.playerId; me.score = 0; me.mode = res.mode || 'classic'; me.team = res.team || null;
       saveRejoin();
       SFX.join();
       if (res.state === 'lobby') { renderLobby(); show('s-lobby'); }
@@ -102,7 +106,14 @@
   });
 
   function robotInto(sel) { $(sel).innerHTML = Robot.svg(me.avatar); }
-  function renderLobby() { robotInto('#lobby-robot'); $('#lobby-name').textContent = me.nickname; }
+  function renderLobby() {
+    robotInto('#lobby-robot'); $('#lobby-name').textContent = me.nickname;
+    const m = Art.MODES[me.mode] || Art.MODES.classic;
+    $('#lobby-mode').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <span class="mode-banner">${m.emoji} Режим: ${esc(m.name)}</span>
+      ${me.team ? `<span class="team-badge" style="background:${me.team.color}">${me.team.emoji} Твоя команда: ${esc(me.team.name)}</span>` : ''}
+      <div class="white" style="max-width:420px;text-align:center;font-weight:700;opacity:.9">${esc(m.kid)}</div></div>`;
+  }
   $('#change-robot').addEventListener('click', () => openEditor(true));
 
   // ── Повернення після обриву зв'язку ──
@@ -113,7 +124,7 @@
     if (!ref || !ref.playerId) return;
     socket.emit('player:rejoin', ref, res => {
       if (res && res.ok) {
-        Object.assign(me, { pin: ref.pin, playerId: ref.playerId, nickname: res.nickname, avatar: res.avatar, score: res.score, joined: true });
+        Object.assign(me, { pin: ref.pin, playerId: ref.playerId, nickname: res.nickname, avatar: res.avatar, score: res.score, joined: true, mode: res.mode || 'classic', team: res.team || null });
         if (res.state === 'lobby') { renderLobby(); show('s-lobby'); }
       } else if (me.joined) {
         toast('Гра вже завершилась', 'bad'); resetAll();
@@ -269,12 +280,31 @@
     if (r.behind) info += `<div class="small">До «${esc(r.behind.nickname)}» лишилось ${r.behind.diff} балів — наздоганяй!</div>`;
     else if (r.rank === 1) info += `<div class="small">👑 Ти лідер! Не здавай позиції!</div>`;
     if (!r.ok) info += `<div style="margin-top:8px">Правильна відповідь: <b>${esc(answerText(r))}</b></div>`;
+    info += modeStatus(r);
     if (r.fact) info += `<div class="small" style="margin-top:8px">💡 ${esc(r.fact)}</div>`;
     $('#r-info').innerHTML = info;
     show('s-result');
     if (r.ok) { SFX.correct(); if (r.streak >= 3) confetti(1800); } else SFX.wrong();
     $('#r-icon').classList.remove('anim-zoom'); void $('#r-icon').offsetWidth; $('#r-icon').classList.add('anim-zoom');
   });
+
+  function modeStatus(r) {
+    const mi = r.modeInfo || {};
+    if (r.mode === 'race') {
+      const pct = Math.round((mi.progress || 0) * 100);
+      return `<div class="mode-status" style="background:#EEF2FF">🚀<div class="mini-rocket"><i style="width:${pct}%"></i></div>🪐 <span>${pct}%</span></div>`;
+    }
+    if (r.mode === 'bug') {
+      if (mi.justEscaped) return `<div class="mode-status" style="background:#DCFCE7;color:#065F46">🎉 Ти вирвався від Бага! Так тримати!</div>`;
+      if (mi.justCaught) return `<div class="mode-status" style="background:#EDE9FE;color:#5B21B6">🐛 Ой! Баг тебе спіймав. Правильна відповідь звільнить!</div>`;
+      if (mi.caught) return `<div class="mode-status" style="background:#EDE9FE;color:#5B21B6">🕸️ Ти ще в Бага. Відповідай правильно, щоб утекти!</div>`;
+      return `<div class="mode-status" style="background:#DCFCE7;color:#065F46">🏃 Баг позаду — біжи далі!</div>`;
+    }
+    if (r.mode === 'towers' && mi.team) {
+      return `<div class="mode-status" style="background:${mi.team.color};color:#fff">${mi.team.emoji} ${esc(mi.team.name)}: ${mi.teamRank} місце з ${mi.teams}${mi.bricks ? ` · ти додав ${mi.bricks} 🧱` : ''}</div>`;
+    }
+    return '';
+  }
 
   function answerText(r) {
     const a = r.answer || {};
@@ -296,6 +326,9 @@
     $('#end-medal').textContent = medals[r.rank] || '🤖';
     $('#end-title').textContent = r.rank <= 3 ? `${r.rank} місце! Ти зірка!` : `${r.rank} місце з ${r.players}`;
     $('#end-score').textContent = `${r.score} балів`;
+    $('#end-mode').innerHTML = r.team ? `<span class="team-badge" style="background:${r.team.color}">${r.team.emoji} ${esc(r.team.name)}: ${r.team.rank === 1 ? '🏆 ПЕРЕМОГА!' : r.team.rank + ' місце'}</span>`
+      : r.mode === 'bug' ? `<span class="mode-banner">${r.caught ? '🐛 Цього разу Баг тебе спіймав — наступного разу втечеш!' : '🎉 Ти втік від Бага!'}</span>` : '';
+    if (r.team && r.team.rank === 1) confetti(4000);
     $('#end-podium').innerHTML = (r.podium || []).map((p, i) => `<div class="pm">${Robot.svg(p.avatar)}<div>${medals[i + 1]} ${esc(p.nickname)}</div></div>`).join('');
     show('s-end');
     if (r.rank <= 3) { SFX.fanfare(); confetti(5000); } else SFX.correct();
@@ -308,7 +341,7 @@
 
   function resetAll() {
     clearRejoin();
-    Object.assign(me, { pin: null, playerId: null, nickname: '', avatar: Robot.random(), joined: false, score: 0 });
+    Object.assign(me, { pin: null, playerId: null, nickname: '', avatar: Robot.random(), joined: false, score: 0, mode: 'classic', team: null });
     $('#pin').value = ''; $('#nick').value = '';
     show('s-pin');
   }
