@@ -1,5 +1,238 @@
 [
   {
+    "id": "be8a6116fb5d",
+    "title": "3D-графіка: Інтерфейс Blender",
+    "description": "Квіз зібрано з вбудованої бази питань Robot School.",
+    "direction": "3d",
+    "cover": "🧊",
+    "defaultTime": 30,
+    "topics": "Інтерфейс Blender, Гарячі клавіші, інструменти Edit Mode, Rigid Body",
+    "ai": true,
+    "createdAt": "2026-11-23T12:58:46.941Z",
+    "updatedAt": "2026-11-23T12:58:46.941Z",
+    "questions": [
+      {
+        "id": "2a841d3ed03a",
+        "type": "truefalse",
+        "text": "Клавіша Tab перемикає між Object Mode та Edit Mode.",
+        "emoji": "🔁",
+        "time": 30,
+        "points": "standard",
+        "fact": "Так! Tab — найчастіша клавіша 3D-дизайнера: в Edit Mode можна змінювати вершини, ребра й грані.",
+        "options": [
+          "Правда",
+          "Неправда"
+        ],
+        "correct": [
+          0
+        ],
+        "answers": []
+      },
+      {
+        "id": "651e9686f443",
+        "type": "quiz",
+        "text": "Яка клавіша в Blender хапає й переміщує об'єкт?",
+        "emoji": "🕹️",
+        "time": 30,
+        "points": "standard",
+        "fact": "G — Grab (перемістити), R — Rotate (обернути), S — Scale (масштабувати).",
+        "options": [
+          "R",
+          "G",
+          "M",
+          "S"
+        ],
+        "correct": [
+          1
+        ],
+        "answers": []
+      },
+      {
+        "id": "e33e9d409483",
+        "type": "multi",
+        "text": "Які типи джерел світла є в Blender?",
+        "emoji": "💡",
+        "time": 40,
+        "points": "standard",
+        "fact": "Point, Sun, Spot і Area — чотири лампи Blender. Місяця немає, але Sun можна зробити блакитним і тьмяним 🌙",
+        "options": [
+          "Point",
+          "Spot",
+          "Moon",
+          "Sun",
+          "Area"
+        ],
+        "correct": [
+          0,
+          3,
+          1,
+          4
+        ],
+        "answers": []
+      },
+      {
+        "id": "dc9f02915997",
+        "type": "input",
+        "text": "Як звати мавпочку-примітив, яка живе в Blender?",
+        "emoji": "🐵",
+        "time": 40,
+        "points": "standard",
+        "fact": "Suzanne — талісман Blender. Її часто використовують для тестів матеріалів і світла.",
+        "options": [],
+        "correct": [],
+        "answers": [
+          "Suzanne",
+          "Сюзанна",
+          "Сюзанн",
+          "Сюзан"
+        ]
+      },
+      {
+        "id": "7ee4a0488e7b",
+        "type": "order",
+        "text": "Розстав етапи створення 3D-сцени по порядку:",
+        "emoji": "🎬",
+        "time": 40,
+        "points": "double",
+        "fact": "Спершу форма, потім «одяг» моделі, далі світло — і лише тоді фінальна картинка.",
+        "options": [
+          "Моделювання",
+          "Матеріали і текстури",
+          "Освітлення",
+          "Рендер"
+        ],
+        "correct": [],
+        "answers": []
+      },
+      {
+        "id": "1a462c400ce4",
+        "type": "truefalse",
+        "text": "Клавіша E в Edit Mode «видавлює» (Extrude) виділені грані.",
+        "emoji": "⬆️",
+        "time": 30,
+        "points": "standard",
+        "fact": "Extrude — суперсила моделювання: з куба можна видавити цілого робота!",
+        "options": [
+          "Правда",
+          "Неправда"
+        ],
+        "correct": [
+          0
+        ],
+        "answers": []
+      },
+      {
+        "id": "bd994cd7b2c0",
+        "type": "quiz",
+        "text": "Яка клавіша вставляє ключовий кадр у Blender?",
+        "emoji": "⏱️",
+        "time": 30,
+        "points": "standard",
+        "fact": "I — Insert Keyframe. Наведи мишу на параметр і натисни I!",
+        "options": [
+          "F",
+          "K",
+          "I",
+          "P"
+        ],
+        "correct": [
+          2
+        ],
+        "answers": []
+      },
+      {
+        "id": "abc0ca7e9082",
+        "type": "multi",
+        "text": "Які з цих примітивів є в меню Add → Mesh у Blender?",
+        "emoji": "🧩",
+        "time": 40,
+        "points": "standard",
+        "fact": "Піраміди окремо немає — її роблять з конуса з 4 вершинами!",
+        "options": [
+          "Куб (Cube)",
+          "Піраміда",
+          "Циліндр",
+          "Чайник",
+          "UV-сфера"
+        ],
+        "correct": [
+          0,
+          4,
+          2
+        ],
+        "answers": []
+      },
+      {
+        "id": "c0872202b7f7",
+        "type": "input",
+        "text": "Скільки граней у куба? (напиши число)",
+        "emoji": "🎲",
+        "time": 40,
+        "points": "standard",
+        "fact": "Шість граней — як у гральному кубику!",
+        "options": [],
+        "correct": [],
+        "answers": [
+          "6",
+          "шість"
+        ]
+      },
+      {
+        "id": "1f8a90d56144",
+        "type": "order",
+        "text": "Розстав від найменшого елемента до найбільшого:",
+        "emoji": "📐",
+        "time": 40,
+        "points": "double",
+        "fact": "Дві вершини утворюють ребро, ребра — грань, а грані — цілий об'єкт.",
+        "options": [
+          "Вершина (Vertex)",
+          "Ребро (Edge)",
+          "Грань (Face)",
+          "Об'єкт (Object)"
+        ],
+        "correct": [],
+        "answers": []
+      },
+      {
+        "id": "e88c35288217",
+        "type": "truefalse",
+        "text": "За допомогою системи частинок (Particle System) можна виростити траву чи волосся.",
+        "emoji": "🌾",
+        "time": 30,
+        "points": "standard",
+        "fact": "Particle System розкидає тисячі об'єктів чи волосин за секунди.",
+        "options": [
+          "Правда",
+          "Неправда"
+        ],
+        "correct": [
+          0
+        ],
+        "answers": []
+      },
+      {
+        "id": "bbc30632253c",
+        "type": "quiz",
+        "text": "Яка клавіша в Blender запускає рендер зображення?",
+        "emoji": "📸",
+        "time": 30,
+        "points": "standard",
+        "fact": "F12 — рендер кадру, Ctrl+F12 — рендер усієї анімації.",
+        "options": [
+          "F12",
+          "Enter",
+          "F1",
+          "Space"
+        ],
+        "correct": [
+          0
+        ],
+        "answers": []
+      }
+    ]
+  },
+  {
     "id": "eed9f8e2d265",
     "title": "Blender: перші кроки",
     "description": "Гарячі клавіші, модифікатори, рендер",
