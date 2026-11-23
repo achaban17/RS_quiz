@@ -238,11 +238,11 @@
     "description": "Гарячі клавіші, модифікатори, рендер",
     "direction": "3d",
     "cover": "🧊",
-    "defaultTime": 20,
+    "defaultTime": 30,
     "topics": "гарячі клавіші, модифікатори, моделювання",
     "ai": true,
     "createdAt": "2026-11-23T12:07:35.960Z",
-    "updatedAt": "2026-11-23T12:07:35.960Z",
+    "updatedAt": "2026-11-23T14:36:02.780Z",
     "questions": [
       {
         "id": "a2d27bf5a7d2",
