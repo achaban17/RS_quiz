@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robot School Quiz — кабінет учителя</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="admin">
+
+<!-- Вхід -->
+<section id="v-login" class="hidden">
+  <div class="login-wrap">
+    <img src="/img/logo-white.png" alt="Robot School" style="height:56px">
+    <form class="card anim-zoom" id="f-login" autocomplete="on">
+      <div style="text-align:center" class="big-emoji">👩‍🏫</div>
+      <h2 style="text-align:center;margin:8px 0 18px">Вхід для вчителя</h2>
+      <label class="lbl" for="lg-login">Логін</label>
+      <input class="input" id="lg-login" autocomplete="username" required>
+      <label class="lbl" for="lg-pass" style="margin-top:12px">Пароль</label>
+      <input class="input" id="lg-pass" type="password" autocomplete="current-password" required>
+      <div class="err" id="lg-err"></div>
+      <button class="btn btn-blue btn-block btn-lg">Увійти</button>
+      <p style="text-align:center;margin:14px 0 0"><a href="/" style="color:var(--muted);font-weight:800">← Я учень, хочу грати</a></p>
+    </form>
+  </div>
+</section>
+
+<!-- Мої квізи -->
+<section id="v-dash" class="hidden">
+  <div class="wrap">
+    <div class="admin-head">
+      <a class="logo" href="/admin"><img src="/img/logo-white.png" alt="Robot School"></a>
+      <div class="spacer"></div>
+      <button class="btn" id="btn-gen">✨ Згенерувати з ШІ</button>
+      <button class="btn btn-white" id="btn-new">➕ Створити вручну</button>
+      <button class="btn btn-sm btn-ghost" id="btn-logout">Вийти</button>
+    </div>
+    <h1 class="panel-title">Мої квізи <span class="count-pill" id="dash-count" style="font-size:16px">0</span></h1>
+    <div class="chips" id="dash-filter">
+      <button class="chip on" data-f="all">Усі</button>
+      <button class="chip" data-f="3d">🧊 3D-графіка</button>
+      <button class="chip" data-f="robotics">🤖 Робототехніка</button>
+      <button class="chip" data-f="programming">💻 Програмування</button>
+      <button class="chip" data-f="other">🚀 Інше</button>
+    </div>
+    <div class="quiz-grid" id="quiz-grid"></div>
+  </div>
+</section>
+
+<!-- Редактор -->
+<section id="v-editor" class="hidden">
+  <div class="wrap">
+    <div class="admin-head">
+      <a class="logo" href="/admin"><img src="/img/logo-white.png" alt="Robot School"></a>
+      <div class="spacer"></div>
+      <button class="btn btn-sm btn-ghost" id="ed-back">← До квізів</button>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="ed-meta">
+        <div><label class="lbl">Назва квізу</label><input class="input" id="ed-title" maxlength="120"></div>
+        <div><label class="lbl">Напрямок</label>
+          <select class="select" id="ed-dir">
+            <option value="3d">🧊 3D-графіка</option><option value="robotics">🤖 Робототехніка</option>
+            <option value="programming">💻 Програмування</option><option value="other">🚀 Інше</option>
+          </select></div>
+        <div><label class="lbl">Час за замовч., с</label><input class="input" id="ed-time" type="number" min="5" max="240"></div>
+        <div><label class="lbl">Обкладинка</label><input class="input emoji-in" id="ed-cover" maxlength="4"></div>
+      </div>
+      <div style="margin-top:12px"><label class="lbl">Опис (необов'язково)</label><input class="input" id="ed-desc" maxlength="400"></div>
+      <div class="row wrap" style="margin-top:12px">
+        <button class="btn btn-sm btn-ghost" id="ed-apply-time">⏱️ Застосувати час до всіх питань</button>
+        <span class="hint" id="ed-topics"></span>
+      </div>
+    </div>
+    <div class="editor">
+      <aside class="ed-side">
+        <ul class="q-list" id="q-list"></ul>
+        <div class="row wrap" style="margin-top:10px">
+          <button class="btn btn-sm btn-blue grow" id="q-add">➕ Питання</button>
+          <button class="btn btn-sm grow" id="q-add-ai" title="ШІ додасть нове питання">✨ ШІ-питання</button>
+        </div>
+      </aside>
+      <main class="ed-main">
+        <div class="card" id="q-editor"></div>
+      </main>
+    </div>
+  </div>
+  <div class="sticky-bar">
+    <span class="white" id="ed-status" style="margin-right:auto;align-self:center;font-weight:800"></span>
+    <button class="btn btn-white" id="ed-save">💾 Зберегти</button>
+    <button class="btn btn-green" id="ed-play">▶ Зберегти і запустити</button>
+  </div>
+</section>
+
+<!-- Ведення гри -->
+<section id="v-host" class="hidden host"></section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/fx.js"></script>
+<script src="/js/avatar.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/host.js"></script>
+</body>
+</html>

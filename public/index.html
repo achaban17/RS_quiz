@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Robot School Quiz — грай!</title>
+<link rel="icon" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- 1. Код гри -->
+<section class="screen" id="s-pin">
+  <div class="logo-center"><img src="/img/logo-white.png" alt="Robot School"></div>
+  <div class="center">
+    <form class="card join-card anim-zoom" id="f-pin" autocomplete="off">
+      <div class="steps"><i class="on"></i><i></i><i></i></div>
+      <div class="big-emoji">🎮</div>
+      <h1>Введи код гри</h1>
+      <p>Його покаже вчитель на великому екрані</p>
+      <input class="input input-big" id="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" aria-label="Код гри">
+      <div class="err" id="pin-err"></div>
+      <button class="btn btn-blue btn-block btn-lg" type="submit">Далі ➜</button>
+    </form>
+  </div>
+  <div class="foot-note">🔒 Без реєстрації. Твій нікнейм і робот ніде не зберігаються — вони зникнуть одразу після гри.<br><br>
+    <a class="teacher-link" href="/admin">👩‍🏫 Вхід для вчителя</a></div>
+</section>
+
+<!-- 2. Нікнейм -->
+<section class="screen hidden" id="s-nick">
+  <div class="logo-center"><img src="/img/logo-white.png" alt="Robot School"></div>
+  <div class="center">
+    <form class="card join-card anim-zoom" id="f-nick" autocomplete="off">
+      <div class="steps"><i class="on"></i><i class="on"></i><i></i></div>
+      <div class="big-emoji">🏷️</div>
+      <h1>Як тебе звати у грі?</h1>
+      <p class="quiz-title-line"></p>
+      <div class="row">
+        <input class="input grow" id="nick" maxlength="16" placeholder="Твій нікнейм" aria-label="Нікнейм">
+        <button type="button" class="btn btn-ghost" id="nick-rand" title="Придумати нікнейм">🎲</button>
+      </div>
+      <div class="err" id="nick-err"></div>
+      <button class="btn btn-blue btn-block btn-lg" type="submit">Далі — створити робота ➜</button>
+    </form>
+  </div>
+</section>
+
+<!-- 3. Конструктор робота -->
+<section class="screen hidden" id="s-avatar">
+  <div class="logo-center"><img src="/img/logo-white.png" alt="Robot School"></div>
+  <div class="center">
+    <div class="card anim-zoom" style="width:100%;max-width:980px">
+      <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      <h1 style="text-align:center;margin-bottom:16px">🛠️ Збери свого робота!</h1>
+      <div id="av-editor"></div>
+      <div class="err" id="av-err" style="text-align:center"></div>
+      <div class="row" style="justify-content:center;margin-top:14px">
+        <button class="btn btn-ghost hidden" id="av-cancel" type="button">Скасувати</button>
+        <button class="btn btn-green btn-lg" id="av-done" type="button">🚀 Готово! У гру</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Лобі -->
+<section class="screen hidden" id="s-lobby">
+  <div class="logo-center"><img src="/img/logo-white.png" alt="Robot School"></div>
+  <div class="center">
+    <div class="white head" style="font-size:22px">Ти в грі! ✅</div>
+    <div class="me-robot" id="lobby-robot"></div>
+    <div class="me-name" id="lobby-name"></div>
+    <div class="white" style="font-size:20px;font-weight:800">Чекаємо, поки вчитель почне<span class="dots"></span></div>
+    <button class="btn btn-white" id="change-robot" type="button">🎨 Змінити робота</button>
+  </div>
+</section>
+
+<!-- 5. Приготуйся -->
+<section class="screen hidden" id="s-ready">
+  <div class="center">
+    <div class="qtype-pill" id="ready-n"></div>
+    <div class="qtype-pill" id="ready-type"></div>
+    <div class="double-badge hidden" id="ready-double">⚡ ПОДВІЙНІ БАЛИ ⚡</div>
+    <div class="countdown" id="ready-count">3</div>
+  </div>
+</section>
+
+<!-- 6. Питання -->
+<section class="screen hidden" id="s-question">
+  <div class="q-head">
+    <div class="q-num" id="q-num"></div>
+    <div class="q-emoji" id="q-emoji"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="timer-num" id="q-timer">20</div>
+  </div>
+  <div class="timer-bar"><i id="q-bar"></i></div>
+  <div class="white head" style="text-align:center;padding:10px 0 0" id="q-hint"></div>
+  <div id="q-body" style="flex:1;display:flex;flex-direction:column"></div>
+</section>
+
+<!-- 7. Відповідь прийнято -->
+<section class="screen hidden" id="s-sent">
+  <div class="center">
+    <div class="me-robot" id="sent-robot"></div>
+    <div class="result-title" style="font-size:34px">Відповідь прийнято! ⚡</div>
+    <div class="white" style="font-size:18px;font-weight:800" id="sent-quip"></div>
+  </div>
+</section>
+
+<!-- 8. Результат питання -->
+<section class="screen hidden result-screen" id="s-result">
+  <div class="center">
+    <div class="result-icon" id="r-icon"></div>
+    <div class="result-title" id="r-title"></div>
+    <div class="result-points" id="r-points"></div>
+    <div class="streak hidden" id="r-streak"></div>
+    <div class="info-card" id="r-info"></div>
+  </div>
+</section>
+
+<!-- 9. Очікування -->
+<section class="screen hidden" id="s-wait">
+  <div class="center">
+    <div class="me-robot" id="wait-robot"></div>
+    <div class="result-title" style="font-size:28px" id="wait-text"></div>
+  </div>
+</section>
+
+<!-- 10. Фінал -->
+<section class="screen hidden" id="s-end">
+  <div class="logo-center"><img src="/img/logo-white.png" alt="Robot School"></div>
+  <div class="center">
+    <div class="medal" id="end-medal"></div>
+    <div class="result-title" id="end-title"></div>
+    <div class="result-points" id="end-score"></div>
+    <div class="podium-mini" id="end-podium"></div>
+    <div class="info-card"><b>Дякуємо за гру! 💙</b><div class="small">Твій нікнейм і робот уже видалені з сервера.</div></div>
+    <button class="btn btn-lg" id="play-again" type="button">🔁 Зіграти ще</button>
+  </div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/fx.js"></script>
+<script src="/js/avatar.js"></script>
+<script src="/js/player.js"></script>
+</body>
+</html>

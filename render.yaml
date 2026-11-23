@@ -1,0 +1,17 @@
+# Налаштування для Render.com (New → Blueprint). Значення секретів Render попросить ввести вручну.
+services:
+  - type: web
+    name: robot-school-quiz
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: GITHUB_REPO
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
