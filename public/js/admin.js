@@ -135,37 +135,41 @@
   });
 
   // ── ШІ-генератор ──
-  $('#btn-gen').addEventListener('click', openGenerator);
-  function openGenerator() {
+  $('#btn-gen').addEventListener('click', () => openGenerator());
+  function openGenerator(prefill) {
+    const st = Object.assign({ source: aiOn ? 'ai' : 'bank', direction: '3d', count: 10, time: 20, topics: [], age: '10–12 років', difficulty: 'середня', types: Object.keys(TYPE_NAMES), extra: '' }, prefill || {});
     const m = document.createElement('div');
     m.className = 'modal-bg';
     m.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
-      <div class="row"><h2 class="grow">✨ ШІ-помічник учителя</h2><button class="icon-btn" data-close>✕</button></div>
-      <p class="sub">Вкажіть параметри — помічник складе інтерактивну вікторину. Потім її можна змінити як завгодно.</p>
-      ${aiOn ? `<div class="ai-note" style="margin-bottom:14px;background:#E3FCEF;color:#0B6B3A">🤖 Підключено: ${esc(aiName)}. Генерація 20+ питань на безкоштовному тарифі може тривати 1–2 хвилини.</div>` : '<div class="ai-note" style="margin-bottom:14px">ℹ️ ШІ не підключено — квіз буде зібрано з вбудованої бази питань Robot School. Щоб ШІ писав нові питання на будь-які теми, додайте безкоштовний ключ GEMINI_API_KEY (див. README).</div>'}
-      <form id="gen-form" class="gen-grid">
+      <div class="row"><h2 class="grow">✨ Створити квіз</h2><button class="icon-btn" data-close>✕</button></div>
+      <p class="sub">Вкажіть параметри — після створення квіз можна змінити як завгодно.</p>
+      <form id="gen-form" class="gen-grid" autocomplete="off">
+        <div class="full"><label class="lbl">Звідки взяти питання</label>
+          <div class="src-pick">
+            <label><input type="radio" name="source" value="ai" ${st.source === 'ai' ? 'checked' : ''}><div class="sp"><span class="e">✨</span><b>ШІ складе нові питання</b><small>Унікальні питання саме на ваші теми</small><span class="ai-status" id="ai-status"><span class="spinner dark"></span> перевіряю ШІ…</span></div></label>
+            <label><input type="radio" name="source" value="bank" ${st.source === 'bank' ? 'checked' : ''}><div class="sp"><span class="e">📚</span><b>З бази Robot School</b><small>Перевірені питання, ~20 на кожен напрямок. Працює без інтернету</small></div></label>
+          </div></div>
         <div class="full"><label class="lbl">Напрямок</label>
           <div class="dir-pick">
-            <label><input type="radio" name="dir" value="3d" checked><div class="dp"><span class="e">🧊</span>3D-графіка</div></label>
-            <label><input type="radio" name="dir" value="robotics"><div class="dp"><span class="e">🤖</span>Робототехніка</div></label>
-            <label><input type="radio" name="dir" value="programming"><div class="dp"><span class="e">💻</span>Програмування</div></label>
+            ${[['3d', '🧊', '3D-графіка'], ['robotics', '🤖', 'Робототехніка'], ['programming', '💻', 'Програмування']].map(([v, e, n]) => `<label><input type="radio" name="dir" value="${v}" ${st.direction === v ? 'checked' : ''}><div class="dp"><span class="e">${e}</span>${n}</div></label>`).join('')}
           </div></div>
         <div><label class="lbl">Кількість питань</label>
-          <div class="range-row"><input type="range" name="count" min="3" max="30" value="10"><output>10</output></div></div>
+          <div class="range-row"><input type="range" name="count" min="3" max="30" value="${st.count}"><output></output></div></div>
         <div><label class="lbl">Час на кожне питання</label>
-          <div class="range-row"><input type="range" name="time" min="5" max="120" step="5" value="20"><output>20 с</output></div></div>
-        <div class="full"><label class="lbl">Теми для питань</label>
-          <textarea class="input" name="topics" rows="2" style="font-size:16px;font-family:var(--body);min-height:60px" placeholder="Наприклад: модифікатори, анімація ключовими кадрами, освітлення"></textarea>
+          <div class="range-row"><input type="range" name="time" min="5" max="120" step="5" value="${st.time}"><output></output></div></div>
+        <div class="full"><label class="lbl" for="topic-in">Теми для питань — напишіть свою і натисніть Enter</label>
+          <div class="tag-input" id="tag-box"><span id="tag-chips"></span><input id="topic-in" placeholder="Напр.: моделювання меча, освітлення сцени…" maxlength="80"></div>
+          <div class="hint">Можна писати кілька тем через кому. Або натисніть підказку нижче:</div>
           <div class="tags" id="gen-tags"></div></div>
         <div><label class="lbl">Вік учнів</label>
-          <select class="select" name="age"><option>7–9 років</option><option selected>10–12 років</option><option>13–15 років</option><option>16+ років</option></select></div>
+          <select class="select" name="age">${['7–9 років', '10–12 років', '13–15 років', '16+ років'].map(v => `<option ${v === st.age ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
         <div><label class="lbl">Складність</label>
-          <select class="select" name="difficulty"><option>легка</option><option selected>середня</option><option>складна</option></select></div>
+          <select class="select" name="difficulty">${['легка', 'середня', 'складна'].map(v => `<option ${v === st.difficulty ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
         <div class="full"><label class="lbl">Типи питань</label>
-          <div class="type-pick">${Object.entries(TYPE_NAMES).map(([k, v]) => `<label><input type="checkbox" name="types" value="${k}" checked><span>${v}</span></label>`).join('')}</div></div>
-        <div class="full"><label class="lbl">Додаткові побажання (необов'язково)</label>
-          <input class="input" name="extra" style="font-size:16px" placeholder="Напр.: питання про проєкт «Електрогітара», з гумором"></div>
-        <div class="full row" style="justify-content:flex-end"><button type="button" class="btn btn-ghost" data-close>Скасувати</button><button class="btn btn-blue btn-lg">✨ Згенерувати квіз</button></div>
+          <div class="type-pick">${Object.entries(TYPE_NAMES).map(([k, v]) => `<label><input type="checkbox" name="types" value="${k}" ${st.types.includes(k) ? 'checked' : ''}><span>${v}</span></label>`).join('')}</div></div>
+        <div class="full ai-only"><label class="lbl">Додаткові побажання для ШІ (необов'язково)</label>
+          <input class="input" name="extra" style="font-size:16px" value="${esc(st.extra)}" placeholder="Напр.: питання про проєкт «Електрогітара», з гумором"></div>
+        <div class="full row" style="justify-content:flex-end"><button type="button" class="btn btn-ghost" data-close>Скасувати</button><button class="btn btn-blue btn-lg" id="gen-go">✨ Створити квіз</button></div>
       </form></div>`;
     document.body.appendChild(m);
     const f = $('#gen-form', m);
@@ -177,28 +181,67 @@
       const upd = () => o.textContent = r.value + (r.name === 'time' ? ' с' : '');
       r.oninput = upd; upd();
     });
-    const drawTags = () => {
-      const dir = f.dir.value;
-      $('#gen-tags', m).innerHTML = (TOPIC_TAGS[dir] || []).map(t => `<button type="button">+ ${esc(t)}</button>`).join('');
+
+    // ── Теми: введення з клавіатури ──
+    let topics = st.topics.slice();
+    const chips = $('#tag-chips', m), tin = $('#topic-in', m);
+    const drawChips = () => {
+      chips.innerHTML = topics.map((t, i) => `<span class="chip-t">${esc(t)}<button type="button" data-del="${i}" aria-label="Прибрати">×</button></span>`).join('');
+      drawTags();
     };
-    f.addEventListener('change', e => { if (e.target.name === 'dir') drawTags(); });
-    $('#gen-tags', m).addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b) return;
-      const t = b.textContent.replace(/^\+\s*/, '');
-      const cur = f.topics.value.trim();
-      if (!cur.toLowerCase().includes(t.toLowerCase())) f.topics.value = cur ? cur + ', ' + t : t;
-      b.remove();
+    const addTopics = text => {
+      String(text).split(/[,;\n]+/).map(t => t.trim()).filter(Boolean).forEach(t => {
+        if (!topics.some(x => x.toLowerCase() === t.toLowerCase()) && topics.length < 12) topics.push(t.slice(0, 80));
+      });
+      drawChips();
+    };
+    tin.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTopics(tin.value); tin.value = ''; }
+      else if (e.key === 'Backspace' && !tin.value && topics.length) { topics.pop(); drawChips(); }
     });
-    drawTags();
+    tin.addEventListener('blur', () => { if (tin.value.trim()) { addTopics(tin.value); tin.value = ''; } });
+    tin.addEventListener('paste', () => setTimeout(() => { if (/[,;\n]/.test(tin.value)) { addTopics(tin.value); tin.value = ''; } }, 0));
+    $('#tag-box', m).addEventListener('click', e => {
+      const d = e.target.closest('[data-del]');
+      if (d) { topics.splice(+d.dataset.del, 1); drawChips(); } else tin.focus();
+    });
+    function drawTags() {
+      const dir = f.dir.value;
+      $('#gen-tags', m).innerHTML = (TOPIC_TAGS[dir] || []).filter(t => !topics.some(x => x.toLowerCase() === t.toLowerCase())).map(t => `<button type="button">+ ${esc(t)}</button>`).join('');
+    }
+    $('#gen-tags', m).addEventListener('click', e => { const b = e.target.closest('button'); if (b) addTopics(b.textContent.replace(/^\+\s*/, '')); });
+    drawChips();
+
+    // ── Джерело питань і стан ШІ ──
+    const syncSource = () => {
+      const ai = f.source.value === 'ai';
+      $$('.ai-only', m).forEach(el => el.classList.toggle('hidden', !ai));
+      $('#gen-go', m).textContent = ai ? '✨ Створити через ШІ' : '📚 Зібрати з бази';
+    };
+    f.addEventListener('change', e => { if (e.target.name === 'dir') drawTags(); if (e.target.name === 'source') syncSource(); });
+    syncSource();
+    const aiBox = $('#ai-status', m);
+    api('/api/ai-status').then(r => {
+      if (!document.body.contains(m)) return;
+      aiBox.className = 'ai-status ' + (r.ok ? 'ok' : 'bad');
+      aiBox.textContent = r.ok ? `✅ Працює: ${r.model || r.provider}` : `⚠️ ${r.message || 'ШІ недоступний'}`;
+      aiBox.title = r.message || '';
+      if (!r.ok && f.source.value === 'ai' && !r.configured) { f.source.value = 'bank'; syncSource(); }
+    }).catch(() => { aiBox.className = 'ai-status bad'; aiBox.textContent = '⚠️ Не вдалося перевірити ШІ'; });
+
     f.addEventListener('submit', async e => {
       e.preventDefault();
+      if (tin.value.trim()) { addTopics(tin.value); tin.value = ''; }
       const types = $$('input[name=types]:checked', f).map(i => i.value);
       if (!types.length) { toast('Оберіть хоча б один тип питань', 'bad'); return; }
-      const params = { direction: f.dir.value, count: +f.count.value, time: +f.time.value, topics: f.topics.value, age: f.age.value, difficulty: f.difficulty.value, types, extra: f.extra.value };
+      const params = { source: f.source.value, direction: f.dir.value, count: +f.count.value, time: +f.time.value, topics: topics.join(', '), age: f.age.value, difficulty: f.difficulty.value, types, extra: f.extra.value };
+      const keep = { ...params, topics: topics.slice() };
       const modal = $('.modal', m);
-      const backup = modal.innerHTML;
-      modal.innerHTML = `<div class="thinking"><div class="robot-think" style="background:var(--blue);border-radius:50%;padding:14px">${Art.mascot({ pose: 'idle', prop: 'laptop' })}</div>
-        <h2>ШІ-помічник складає квіз…</h2><div class="sub" id="think-line">Підбираю найцікавіші питання</div><div class="bar"><i></i></div></div>`;
+      if (params.source === 'ai') {
+        modal.innerHTML = `<div class="thinking"><div class="robot-think" style="background:var(--blue);border-radius:50%;padding:14px">${Art.mascot({ pose: 'idle', prop: 'laptop' })}</div>
+          <h2>ШІ-помічник складає квіз…</h2><div class="sub" id="think-line">Підбираю найцікавіші питання</div><div class="bar"><i></i></div>
+          <div class="hint">На безкоштовному тарифі це може тривати до 1–2 хвилин</div></div>`;
+      } else modal.innerHTML = `<div class="thinking"><div class="spinner dark" style="width:44px;height:44px"></div><h2>Збираю квіз із бази…</h2></div>`;
       const lines = ['Підбираю найцікавіші питання', 'Вигадую хитрі варіанти відповідей', 'Додаю цікаві факти', 'Перевіряю правильні відповіді', 'Розставляю бонусні раунди ⚡'];
       let li = 0;
       const iv = setInterval(() => { const el = $('#think-line', m); if (el) el.textContent = lines[++li % lines.length]; }, 1800);
@@ -208,16 +251,22 @@
         close();
         pendingDraft = res.quiz;
         SFX.correct();
-        if (res.warning) toast(res.warning, 'bad');
-        else toast(res.source === 'ai' ? '✨ Квіз згенеровано! Перевірте й збережіть' : 'Квіз зібрано з вбудованої бази. Перевірте й збережіть', 'ok');
+        toast(res.source === 'ai' ? '✨ ШІ склав квіз! Перевірте й збережіть' : '📚 Квіз зібрано з бази. Перевірте й збережіть', 'ok');
+        if (res.warning) setTimeout(() => toast(res.warning), 600);
         location.hash = '#/edit/new';
       } catch (err) {
         clearInterval(iv);
-        modal.innerHTML = backup;
-        toast(err.message, 'bad');
-        close(); openGenerator();
+        SFX.wrong();
+        modal.innerHTML = `<div class="thinking"><div class="big-emoji">😵‍💫</div><h2>Не вдалося створити квіз</h2>
+          <div class="ai-note" style="max-width:560px;text-align:left">${esc(err.message)}</div>
+          <div class="row wrap" style="justify-content:center"><button class="btn btn-ghost" data-close>Закрити</button>
+          <button class="btn btn-blue" id="gen-retry">🔁 Спробувати ще раз</button><button class="btn" id="gen-bank">📚 Взяти з бази</button></div></div>`;
+        $$('[data-close]', m).forEach(b => b.onclick = close);
+        $('#gen-retry', m).onclick = () => { close(); openGenerator(keep); };
+        $('#gen-bank', m).onclick = () => { close(); openGenerator({ ...keep, source: 'bank' }); };
       }
     });
+    setTimeout(() => tin.focus(), 100);
   }
 
   // ── Редактор ──

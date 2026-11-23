@@ -106,7 +106,11 @@ app.post('/api/quizzes/:id/duplicate', requireAdmin, (req, res) => {
 // ───────────── ШІ-помічник ─────────────
 app.post('/api/generate', requireAdmin, async (req, res) => {
   try { res.json(await ai.generateQuiz(req.body || {})); }
-  catch (e) { console.error(e); res.status(500).json({ error: 'Не вдалося згенерувати квіз: ' + e.message }); }
+  catch (e) { console.error(e.message); res.status(502).json({ error: e.message, code: e.code || 'error' }); }
+});
+app.get('/api/ai-status', requireAdmin, async (req, res) => {
+  try { res.json(await ai.status(req.query.force === '1')); }
+  catch (e) { res.json({ ok: false, message: e.message }); }
 });
 app.post('/api/regenerate-question', requireAdmin, async (req, res) => {
   try { res.json(await ai.regenerateQuestion(req.body || {})); }

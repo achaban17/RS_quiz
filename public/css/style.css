@@ -540,3 +540,24 @@ body { background-image: none; }
 .mode-status .mini-rocket { flex: 1; height: 12px; background: #E8EEFF; border-radius: 999px; overflow: hidden; position: relative; }
 .mode-status .mini-rocket i { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, #FFB020, #FF5A5F); border-radius: 999px; transition: width 1.2s; }
 @media (min-width: 761px) { .join-mascot.sm { display: none; } }
+
+/* Генератор: джерело питань і теми */
+.src-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.src-pick label { cursor: pointer; }
+.src-pick input { display: none; }
+.src-pick .sp { border: 3px solid var(--line); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 4px; height: 100%; transition: all .15s; }
+.src-pick .sp .e { font-size: 30px; }
+.src-pick .sp b { font-family: var(--head); font-size: 17px; }
+.src-pick .sp small { color: var(--muted); font-weight: 700; }
+.src-pick input:checked + .sp { border-color: var(--blue); background: var(--blue-l); transform: translateY(-2px); }
+.ai-status { margin-top: 6px; font-size: 13px; font-weight: 800; padding: 6px 10px; border-radius: 10px; background: #F1F4FD; color: var(--muted); display: flex; gap: 6px; align-items: center; word-break: break-word; }
+.ai-status.ok { background: #DCFCE7; color: #065F46; }
+.ai-status.bad { background: #FFF1D6; color: #8A5300; }
+.spinner.dark { border-color: rgba(10, 68, 220, .2); border-top-color: var(--blue); width: 16px; height: 16px; border-width: 3px; }
+.tag-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border: 3px solid var(--line); border-radius: 16px; padding: 8px 10px; background: #fff; cursor: text; min-height: 56px; transition: border-color .15s, box-shadow .15s; }
+.tag-input:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(10, 68, 220, .15); }
+.tag-input #tag-chips { display: contents; }
+.tag-input input { flex: 1; min-width: 180px; border: 0; outline: none; font-size: 16px; font-weight: 700; padding: 6px 4px; background: transparent; }
+.chip-t { display: inline-flex; align-items: center; gap: 4px; background: var(--blue); color: #fff; border-radius: 999px; padding: 5px 6px 5px 12px; font-weight: 800; font-size: 14px; animation: pop .25s; }
+.chip-t button { border: 0; background: rgba(255, 255, 255, .25); color: #fff; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 15px; line-height: 1; }
+@media (max-width: 700px) { .src-pick { grid-template-columns: 1fr; } }
