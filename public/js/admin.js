@@ -14,6 +14,7 @@
 
   let token = localStorage.getItem('rs-admin-token');
   let aiOn = false;
+  let aiName = '';
   let quizzes = [];
   let filter = 'all';
   let draft = null; // квіз, що редагується
@@ -43,7 +44,7 @@
   async function route() {
     const h = location.hash.replace(/^#\/?/, '');
     if (!token) { view('v-login'); setTimeout(() => $('#lg-login').focus(), 50); return; }
-    try { const me = await api('/api/me'); aiOn = me.ai; } catch (_) { return; }
+    try { const me = await api('/api/me'); aiOn = me.ai; aiName = me.aiName || ''; } catch (_) { return; }
     const [page, id] = h.split('/');
     if (page === 'edit' && id) return openEditor(id);
     if (page === 'host' && id) { view('v-host'); return Host.start(id, token, () => { location.hash = '#/'; }); }
@@ -141,7 +142,7 @@
     m.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
       <div class="row"><h2 class="grow">✨ ШІ-помічник учителя</h2><button class="icon-btn" data-close>✕</button></div>
       <p class="sub">Вкажіть параметри — помічник складе інтерактивну вікторину. Потім її можна змінити як завгодно.</p>
-      ${aiOn ? '' : '<div class="ai-note" style="margin-bottom:14px">ℹ️ Ключ Claude API не підключено — квіз буде зібрано з вбудованої бази питань Robot School. Щоб ШІ писав нові питання на будь-які теми, додайте ANTHROPIC_API_KEY у файл .env (див. README).</div>'}
+      ${aiOn ? `<div class="ai-note" style="margin-bottom:14px;background:#E3FCEF;color:#0B6B3A">🤖 Підключено: ${esc(aiName)}. Генерація 20+ питань на безкоштовному тарифі може тривати 1–2 хвилини.</div>` : '<div class="ai-note" style="margin-bottom:14px">ℹ️ ШІ не підключено — квіз буде зібрано з вбудованої бази питань Robot School. Щоб ШІ писав нові питання на будь-які теми, додайте безкоштовний ключ GEMINI_API_KEY (див. README).</div>'}
       <form id="gen-form" class="gen-grid">
         <div class="full"><label class="lbl">Напрямок</label>
           <div class="dir-pick">
@@ -207,7 +208,8 @@
         close();
         pendingDraft = res.quiz;
         SFX.correct();
-        toast(res.source === 'ai' ? '✨ Квіз згенеровано! Перевірте й збережіть' : 'Квіз зібрано з вбудованої бази. Перевірте й збережіть', 'ok');
+        if (res.warning) toast(res.warning, 'bad');
+        else toast(res.source === 'ai' ? '✨ Квіз згенеровано! Перевірте й збережіть' : 'Квіз зібрано з вбудованої бази. Перевірте й збережіть', 'ok');
         location.hash = '#/edit/new';
       } catch (err) {
         clearInterval(iv);

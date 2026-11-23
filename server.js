@@ -77,7 +77,7 @@ app.post('/api/logout', requireAdmin, (req, res) => {
   tokens.delete((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
   res.json({ ok: true });
 });
-app.get('/api/me', requireAdmin, (req, res) => res.json({ ok: true, ai: ai.hasKey() }));
+app.get('/api/me', requireAdmin, (req, res) => res.json({ ok: true, ai: ai.hasKey(), aiName: ai.providerName() }));
 
 // ───────────── Квізи ─────────────
 app.get('/api/quizzes', requireAdmin, (req, res) => {
@@ -476,5 +476,5 @@ store.init().finally(() => server.listen(PORT, () => {
   lan.forEach(a => console.log(`   Для учнів у мережі:    http://${a}:${PORT}`));
   console.log(`   Адмін-панель:          http://localhost:${PORT}/admin`);
   console.log(`   Сховище квізів: ${store.storageInfo()}`);
-  console.log(`   ШІ-генерація: ${ai.hasKey() ? 'Claude API ✅' : 'офлайн-база (додайте ANTHROPIC_API_KEY у файл .env для ШІ)'}\n`);
+  console.log(`   ШІ-генерація: ${ai.hasKey() ? ai.providerName() + ' ✅' : 'вбудована база (додайте GEMINI_API_KEY, щоб підключити безкоштовний ШІ)'}\n`);
 }));

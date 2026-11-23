@@ -47,7 +47,7 @@ GitHub Pages не підходить: він вміє показувати ли�
 2. **Токен для збереження квізів.** Відкрийте *Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token*. У полі *Repository access* виберіть *Only select repositories* і свій репозиторій. У розділі *Permissions → Contents* поставте **Read and write**. Скопіюйте токен (`github_pat_…`).
 3. **Render.** Зареєструйтеся на render.com через GitHub і виберіть *New → Web Service*. Дозвольте доступ до репозиторію і вкажіть:
    - Build Command: `npm install`, Start Command: `npm start`, Instance Type: **Free**;
-   - у розділі *Environment Variables* додайте `GITHUB_REPO` = `ваш-логін/назва-репозиторію` і `GITHUB_TOKEN` = токен із кроку 2. Ключ `ANTHROPIC_API_KEY` додавайте за бажанням.
+   - у розділі *Environment Variables* додайте `GITHUB_REPO` = `ваш-логін/назва-репозиторію` і `GITHUB_TOKEN` = токен із кроку 2. За бажанням додайте ключ ШІ (`GEMINI_API_KEY`), див. розділ «ШІ-помічник».
 4. Натисніть *Deploy*. За кілька хвилин сайт запрацює за адресою на кшталт `https://robot-school-quiz.onrender.com`. Учні заходять туди, а вчитель — на `/admin`. У журналі (*Logs*) має з'явитися рядок «Квізи зберігаються в GitHub ✅».
 
 Особливості безкоштовного Render:
@@ -60,22 +60,27 @@ GitHub Pages не підходить: він вміє показувати ли�
 
 ## ШІ-помічник
 
-Без налаштувань генератор збирає квізи з вбудованої бази (близько 60 перевірених питань із 3D-графіки, робототехніки й програмування) з урахуванням вибраних тем і типів.
+Без ключів генератор збирає квізи з вбудованої бази. Це близько 60 перевірених питань із 3D-графіки, робототехніки й програмування. Щоб ШІ складав **нові** питання на будь-які теми, підключіть один із сервісів:
 
-Щоб ШІ складав **нові** питання на будь-які теми:
+| Сервіс | Ціна | Де взяти ключ | Змінна |
+|---|---|---|---|
+| **Google Gemini** (рекомендовано) | безкоштовно, з лімітом запитів | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) → *Create API key* | `GEMINI_API_KEY` |
+| **Groq** (запасний) | безкоштовно, з лімітом запитів | [console.groq.com/keys](https://console.groq.com/keys) → *Create API Key* | `GROQ_API_KEY` |
+| Claude API | платно | [console.anthropic.com](https://console.anthropic.com) | `ANTHROPIC_API_KEY` |
 
-1. Отримайте ключ API на [console.anthropic.com](https://console.anthropic.com).
-2. Скопіюйте `.env.example` у `.env` і впишіть `ANTHROPIC_API_KEY=ваш_ключ`.
-3. Перезапустіть сервер. У консолі має з'явитися «ШІ-генерація: Claude API ✅».
+На Render ключ додають у сервісі → **Environment → Add Environment Variable**, а потім натискають **Save Changes**. Локально ключ записують у файл `.env`.
 
-Ключ зберігається тільки на сервері й ніколи не потрапляє в браузер.
+- Якщо підключено кілька сервісів, сайт пробує їх по черзі. Якщо всі недоступні, квіз збирається з вбудованої бази.
+- Безкоштовні тарифи мають ліміти, тому великий квіз генерується частинами і може зайняти 1–2 хвилини.
+- ШІ отримує лише параметри, які вказав учитель. Дані учнів туди не потрапляють.
+- Ключі зберігаються тільки на сервері й ніколи не потрапляють у браузер.
 
 ## Структура
 
 ```
 server.js            сервер: вхід, квізи, ШІ, ігрові кімнати (Socket.IO)
 lib/store.js         збереження квізів у data/quizzes.json
-lib/ai.js            генерація через Claude API
+lib/ai.js            генерація через Gemini / Groq / Claude API
 lib/bank.js          вбудована база питань (офлайн-режим)
 public/index.html    сторінка учня
 public/admin.html    кабінет учителя та екран ведучого
