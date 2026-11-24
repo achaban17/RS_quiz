@@ -45,7 +45,16 @@
       <button class="chip" data-f="programming">💻 Програмування</button>
       <button class="chip" data-f="other">🚀 Інше</button>
     </div>
-    <div class="quiz-grid" id="quiz-grid"></div>
+    <div class="dash-tools">
+      <select class="select" id="dash-course" title="Курс"><option value="all">📚 Усі курси</option></select>
+      <select class="select" id="dash-sort" title="Сортування">
+        <option value="course">↕️ За курсами</option>
+        <option value="updated">🕒 Нещодавно змінені</option>
+        <option value="title">🔤 За назвою</option>
+      </select>
+      <input class="input" id="dash-search" placeholder="🔎 Пошук квізу…">
+    </div>
+    <div id="quiz-grid"></div>
   </div>
 </section>
 
@@ -67,6 +76,12 @@
           </select></div>
         <div><label class="lbl">Час за замовч., с</label><input class="input" id="ed-time" type="number" min="5" max="240"></div>
         <div><label class="lbl">Обкладинка</label><input class="input emoji-in" id="ed-cover" maxlength="4"></div>
+      </div>
+      <div class="ed-course">
+        <div><label class="lbl">Курс</label><input class="input" id="ed-course" maxlength="80" list="course-list" placeholder="напр. Blender 1"><datalist id="course-list"></datalist></div>
+        <div><label class="lbl">Уроки</label><input class="input" id="ed-lessons" maxlength="40" placeholder="1–8"></div>
+        <div><label class="lbl">Вік</label><input class="input" id="ed-age" maxlength="40" placeholder="10–12 років"></div>
+        <div><label class="lbl">№ у курсі</label><input class="input" id="ed-qorder" type="number" min="0" max="999"></div>
       </div>
       <div style="margin-top:12px"><label class="lbl">Опис (необов'язково)</label><input class="input" id="ed-desc" maxlength="400"></div>
       <div class="row wrap" style="margin-top:12px">
