@@ -92,23 +92,40 @@
     try { quizzes = await api('/api/quizzes'); } catch (e) { toast(e.message, 'bad'); quizzes = []; }
     renderDash();
   }
-  function renderDash() {
-    const list = quizzes.filter(q => filter === 'all' || q.direction === filter);
-    $('#dash-count').textContent = quizzes.length;
-    $$('#dash-filter .chip').forEach(c => c.classList.toggle('on', c.dataset.f === filter));
-    if (!list.length) {
-      $('#quiz-grid').innerHTML = `<div class="empty"><div style="width:140px;margin:0 auto">${Art.mascot({ pose: 'wave', prop: 'magnifier' })}</div><h2 style="margin:10px 0">Тут поки порожньо</h2>
-        <p>Натисніть «✨ Згенерувати з ШІ» — і помічник складе цікавий квіз за хвилину!</p>
-        <button class="btn btn-lg" onclick="document.getElementById('btn-gen').click()">✨ Згенерувати перший квіз</button></div>`;
-      return;
-    }
-    $('#quiz-grid').innerHTML = list.map((q, i) => `
-      <div class="quiz-card" style="animation-delay:${i * 40}ms" data-id="${esc(q.id)}">
+  let courseFilter = localStorage.getItem('rs-course-filter') || 'all';
+  let sortMode = localStorage.getItem('rs-sort') || 'course';
+  let search = '';
+  const closedGroups = new Set(JSON.parse(localStorage.getItem('rs-closed-groups') || '[]'));
+  const NO_COURSE = 'Без курсу';
+  const courseOf = q => (q.course || '').trim() || NO_COURSE;
+
+  function courseList() {
+    const m = new Map();
+    quizzes.forEach(q => { const c = courseOf(q); const o = q.course ? (q.courseOrder ?? 9999) : 10000; if (!m.has(c) || m.get(c) > o) m.set(c, o); });
+    return [...m.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], 'uk')).map(x => x[0]);
+  }
+  function fillCourseSelect() {
+    const cs = courseList();
+    if (courseFilter !== 'all' && !cs.includes(courseFilter)) courseFilter = 'all';
+    $('#dash-course').innerHTML = '<option value="all">📚 Усі курси (' + cs.length + ')</option>' +
+      cs.map(c => `<option value="${esc(c)}">${esc(c)} · ${quizzes.filter(q => courseOf(q) === c).length}</option>`).join('');
+    $('#dash-course').value = courseFilter;
+    $('#dash-sort').value = sortMode;
+    $('#course-list').innerHTML = cs.filter(c => c !== NO_COURSE).map(c => `<option value="${esc(c)}">`).join('');
+  }
+  function sortList(list) {
+    if (sortMode === 'title') return list.sort((a, b) => a.title.localeCompare(b.title, 'uk'));
+    if (sortMode === 'updated') return list.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    return list.sort((a, b) => (a.quizOrder || 0) - (b.quizOrder || 0) || a.title.localeCompare(b.title, 'uk'));
+  }
+  function card(q, i) {
+    return `
+      <div class="quiz-card" style="animation-delay:${Math.min(i, 12) * 40}ms" data-id="${esc(q.id)}">
         <div class="cover d${esc(q.direction)}">${esc(q.cover || '🤖')}
           <span class="badge">${DIRS[q.direction]?.e || ''} ${DIRS[q.direction]?.name || ''}</span>
           ${q.ai ? '<span class="badge ai">✨ ШІ</span>' : ''}</div>
         <div class="body"><h3>${esc(q.title)}</h3>
-          <div class="meta">${q.count} ${plural(q.count, 'питання', 'питання', 'питань')} · оновлено ${new Date(q.updatedAt).toLocaleDateString('uk-UA')}</div>
+          <div class="meta">${q.count} ${plural(q.count, 'питання', 'питання', 'питань')}${q.age ? ' · ' + esc(q.age) : ''} · оновлено ${new Date(q.updatedAt).toLocaleDateString('uk-UA')}</div>
           ${q.description ? `<div class="meta">${esc(q.description)}</div>` : ''}</div>
         <div class="acts">
           <button class="btn btn-green btn-sm btn-play" data-act="play">▶ Запустити</button>
@@ -116,10 +133,50 @@
           <button class="icon-btn" data-act="dup" title="Дублювати">📄</button>
           <button class="icon-btn danger" data-act="del" title="Видалити">🗑️</button>
         </div>
-      </div>`).join('');
+      </div>`;
+  }
+  function renderDash() {
+    fillCourseSelect();
+    const s = search.trim().toLowerCase();
+    const list = quizzes.filter(q => (filter === 'all' || q.direction === filter)
+      && (courseFilter === 'all' || courseOf(q) === courseFilter)
+      && (!s || (q.title + ' ' + (q.description || '') + ' ' + (q.course || '')).toLowerCase().includes(s)));
+    $('#dash-count').textContent = quizzes.length;
+    $$('#dash-filter .chip').forEach(c => c.classList.toggle('on', c.dataset.f === filter));
+    if (!list.length) {
+      $('#quiz-grid').innerHTML = quizzes.length
+        ? `<div class="empty"><h2 style="margin:10px 0">Нічого не знайдено</h2><p>Змініть фільтр, курс або пошук.</p></div>`
+        : `<div class="empty"><div style="width:140px;margin:0 auto">${Art.mascot({ pose: 'wave', prop: 'magnifier' })}</div><h2 style="margin:10px 0">Тут поки порожньо</h2>
+        <p>Натисніть «✨ Згенерувати з ШІ» — і помічник складе цікавий квіз за хвилину!</p>
+        <button class="btn btn-lg" onclick="document.getElementById('btn-gen').click()">✨ Згенерувати перший квіз</button></div>`;
+      return;
+    }
+    if (sortMode !== 'course') {
+      $('#quiz-grid').innerHTML = `<div class="quiz-grid">${sortList(list).map(card).join('')}</div>`;
+      return;
+    }
+    const groups = courseList().map(c => [c, sortList(list.filter(q => courseOf(q) === c))]).filter(g => g[1].length);
+    $('#quiz-grid').innerHTML = groups.map(([c, qs]) => {
+      const closed = closedGroups.has(c) && courseFilter === 'all' && !s;
+      const age = qs.find(q => q.age)?.age;
+      return `<div class="course-group ${closed ? 'closed' : ''}" data-course="${esc(c)}">
+        <h2 class="course-head"><span class="tw">▾</span> ${esc(qs[0].cover && c !== NO_COURSE ? qs[0].cover : '📁')} ${esc(c)}
+          <span class="count-pill">${qs.length}</span>${age ? `<span class="age">· ${esc(age)}</span>` : ''}</h2>
+        <div class="quiz-grid">${qs.map(card).join('')}</div></div>`;
+    }).join('');
   }
   function plural(n, one, few, many) { const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? few : many; }
   $('#dash-filter').addEventListener('click', e => { const c = e.target.closest('.chip'); if (c) { filter = c.dataset.f; renderDash(); } });
+  $('#dash-course').addEventListener('change', () => { courseFilter = $('#dash-course').value; localStorage.setItem('rs-course-filter', courseFilter); renderDash(); });
+  $('#dash-sort').addEventListener('change', () => { sortMode = $('#dash-sort').value; localStorage.setItem('rs-sort', sortMode); renderDash(); });
+  $('#dash-search').addEventListener('input', () => { search = $('#dash-search').value; renderDash(); });
+  $('#quiz-grid').addEventListener('click', e => {
+    const h = e.target.closest('.course-head'); if (!h) return;
+    const g = h.parentElement; const c = g.dataset.course;
+    g.classList.toggle('closed');
+    if (g.classList.contains('closed')) closedGroups.add(c); else closedGroups.delete(c);
+    localStorage.setItem('rs-closed-groups', JSON.stringify([...closedGroups]));
+  });
   $('#quiz-grid').addEventListener('click', async e => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const id = b.closest('.quiz-card').dataset.id;
@@ -131,6 +188,11 @@
   });
   $('#btn-new').addEventListener('click', () => {
     pendingDraft = { title: 'Новий квіз', direction: '3d', cover: '🧊', defaultTime: 20, questions: [blankQuestion('quiz', 20)] };
+    if (courseFilter !== 'all' && courseFilter !== NO_COURSE) { // створюємо одразу в обраному курсі
+      const same = quizzes.filter(q => q.course === courseFilter);
+      Object.assign(pendingDraft, { course: courseFilter, courseOrder: same[0]?.courseOrder ?? 9999, age: same[0]?.age || '',
+        direction: same[0]?.direction || '3d', cover: same[0]?.cover || '🧊', quizOrder: same.length + 1 });
+    }
     location.hash = '#/edit/new';
   });
 
@@ -304,15 +366,27 @@
     $('#ed-time').value = draft.defaultTime || 20;
     $('#ed-cover').value = draft.cover || '🤖';
     $('#ed-desc').value = draft.description || '';
+    $('#ed-course').value = draft.course || '';
+    $('#ed-lessons').value = draft.lessons || '';
+    $('#ed-age').value = draft.age || '';
+    $('#ed-qorder').value = draft.quizOrder || '';
+    $('#course-list').innerHTML = courseList().filter(c => c !== NO_COURSE).map(c => `<option value="${esc(c)}">`).join('');
     $('#ed-topics').textContent = draft.topics ? '🏷️ Теми: ' + draft.topics : '';
     renderList(); renderQ(); status();
   }
   function status() { $('#ed-status').textContent = dirty ? '● Є незбережені зміни' : '✔ Усе збережено'; }
   function touch() { dirty = true; status(); }
 
-  ['ed-title', 'ed-dir', 'ed-time', 'ed-cover', 'ed-desc'].forEach(id => $('#' + id).addEventListener('input', () => {
+  ['ed-title', 'ed-dir', 'ed-time', 'ed-cover', 'ed-desc', 'ed-course', 'ed-lessons', 'ed-age', 'ed-qorder'].forEach(id => $('#' + id).addEventListener('input', () => {
     draft.title = $('#ed-title').value; draft.direction = $('#ed-dir').value; draft.defaultTime = +$('#ed-time').value || 20;
-    draft.cover = $('#ed-cover').value; draft.description = $('#ed-desc').value; touch();
+    draft.cover = $('#ed-cover').value; draft.description = $('#ed-desc').value;
+    const newCourse = $('#ed-course').value.trim();
+    if (newCourse !== (draft.course || '')) { // нова назва курсу → підставляємо порядок курсу, якщо він уже існує
+      const same = quizzes.find(q => (q.course || '') === newCourse);
+      draft.courseOrder = same ? same.courseOrder : 9999;
+    }
+    draft.course = newCourse; draft.lessons = $('#ed-lessons').value; draft.age = $('#ed-age').value;
+    draft.quizOrder = +$('#ed-qorder').value || 0; touch();
   }));
   $('#ed-apply-time').addEventListener('click', () => {
     const t = Math.max(5, Math.min(240, +$('#ed-time').value || 20));

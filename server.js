@@ -84,6 +84,7 @@ app.get('/api/quizzes', requireAdmin, (req, res) => {
   res.json(store.list().map(q => ({
     id: q.id, title: q.title, description: q.description, direction: q.direction, cover: q.cover,
     count: q.questions.length, ai: q.ai, updatedAt: q.updatedAt, createdAt: q.createdAt,
+    course: q.course || '', courseOrder: q.courseOrder ?? 9999, quizOrder: q.quizOrder || 0, lessons: q.lessons || '', age: q.age || '',
   })));
 });
 app.get('/api/quizzes/:id', requireAdmin, (req, res) => {
